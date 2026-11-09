@@ -1,0 +1,12 @@
+services:
+  helpdesk:
+    build: .
+    container_name: sysadmin_helpdesk
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./helpdesk.db:/app/helpdesk.db
+    environment:
+      - ADMIN_PIN=1234

@@ -1,0 +1,14 @@
+# Node
+node_modules/
+.expo/
+dist/
+npm-debug.log*
+
+# Python
+venv/
+__pycache__/
+*.py[cod]
+*.db-journal
+
+# Ignore local uploaded photos if needed (optional)
+# backend/uploads/*
