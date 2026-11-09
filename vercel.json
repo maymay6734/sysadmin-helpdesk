@@ -1,10 +1,14 @@
 {
   "version": 2,
-  "framework": null,
+  "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/(.*)",
-      "destination": "https://sysadmin-helpdesk.onrender.com/$1"
+      "source": "/api/(.*)",
+      "destination": "https://sysadmin-helpdesk.onrender.com/api/$1"
+    },
+    {
+      "source": "/uploads/(.*)",
+      "destination": "https://sysadmin-helpdesk.onrender.com/uploads/$1"
     }
   ]
 }
