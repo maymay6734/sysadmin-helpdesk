@@ -13,10 +13,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { fetchTickets, getImageUrl } from '../api';
 
 const STATUS_MAP = {
-  new: { label: 'Новое', color: '#0369a1', bg: '#e0f2fe' },
-  in_progress: { label: 'В работе', color: '#b45309', bg: '#fef3c7' },
-  resolved: { label: 'Решено', color: '#15803d', bg: '#dcfce7' },
-  rejected: { label: 'Отклонено', color: '#475569', bg: '#f1f5f9' },
+  new: { label: 'Ожидает', dot: '#38bdf8', bg: 'rgba(56, 189, 248, 0.1)', border: 'rgba(56, 189, 248, 0.25)' },
+  in_progress: { label: 'В работе', dot: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)', border: 'rgba(245, 158, 11, 0.25)' },
+  resolved: { label: 'Закрыт', dot: '#10b981', bg: 'rgba(16, 185, 129, 0.1)', border: 'rgba(16, 185, 129, 0.25)' },
+  rejected: { label: 'Отклонен', dot: '#94a3b8', bg: 'rgba(148, 163, 184, 0.1)', border: 'rgba(148, 163, 184, 0.2)' },
 };
 
 export default function MyTicketsScreen({ onSelectPhoto, onCreateNew }) {
@@ -31,7 +31,7 @@ export default function MyTicketsScreen({ onSelectPhoto, onCreateNew }) {
       const data = await fetchTickets();
       setTickets(data);
     } catch (err) {
-      setError('Не удалось получить список обращений. Проверьте соединение.');
+      setError('Не удалось загрузить реестр инцидентов.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -68,15 +68,16 @@ export default function MyTicketsScreen({ onSelectPhoto, onCreateNew }) {
             <Text style={styles.ticketId}>{incNumber}</Text>
             <Text style={styles.dateText}>{formattedDate}</Text>
           </View>
-          <View style={[styles.statusBadge, { backgroundColor: statusMeta.bg }]}>
-            <Text style={[styles.statusBadgeText, { color: statusMeta.color }]}>
+          <View style={[styles.statusBadge, { backgroundColor: statusMeta.bg, borderColor: statusMeta.border }]}>
+            <View style={[styles.statusDot, { backgroundColor: statusMeta.dot }]} />
+            <Text style={[styles.statusBadgeText, { color: statusMeta.dot }]}>
               {statusMeta.label}
             </Text>
           </View>
         </View>
 
         <View style={styles.locationRow}>
-          <Ionicons name="location-outline" size={15} color="#475569" />
+          <Ionicons name="location-outline" size={14} color="#38bdf8" />
           <Text style={styles.locationText}>{item.location}</Text>
         </View>
 
@@ -87,7 +88,7 @@ export default function MyTicketsScreen({ onSelectPhoto, onCreateNew }) {
             <Text style={styles.tagText}>{item.category || 'Общее'}</Text>
           </View>
           <View style={styles.tag}>
-            <Text style={styles.tagText}>{item.priority || 'Средний'}</Text>
+            <Text style={styles.tagText}>Приоритет: {item.priority || 'Средний'}</Text>
           </View>
         </View>
 
@@ -99,6 +100,7 @@ export default function MyTicketsScreen({ onSelectPhoto, onCreateNew }) {
                 <TouchableOpacity
                   key={i}
                   onPress={() => onSelectPhoto && onSelectPhoto(fullUrl)}
+                  activeOpacity={0.8}
                 >
                   <Image source={{ uri: fullUrl }} style={styles.thumbImage} />
                 </TouchableOpacity>
@@ -109,7 +111,10 @@ export default function MyTicketsScreen({ onSelectPhoto, onCreateNew }) {
 
         {item.admin_notes ? (
           <View style={styles.adminNoteBox}>
-            <Text style={styles.adminNoteTitle}>Заключение технического специалиста:</Text>
+            <View style={styles.adminNoteHeader}>
+              <Ionicons name="git-commit-outline" size={13} color="#38bdf8" />
+              <Text style={styles.adminNoteTitle}>Заключение дежурного инженера:</Text>
+            </View>
             <Text style={styles.adminNoteText}>{item.admin_notes}</Text>
           </View>
         ) : null}
@@ -120,8 +125,8 @@ export default function MyTicketsScreen({ onSelectPhoto, onCreateNew }) {
   if (loading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="small" color="#0f172a" />
-        <Text style={styles.loadingText}>Загрузка данных...</Text>
+        <ActivityIndicator size="small" color="#38bdf8" />
+        <Text style={styles.loadingText}>Синхронизация с реестром...</Text>
       </View>
     );
   }
@@ -130,10 +135,10 @@ export default function MyTicketsScreen({ onSelectPhoto, onCreateNew }) {
     <View style={styles.container}>
       {error ? (
         <View style={styles.errorBox}>
-          <Ionicons name="alert-circle-outline" size={18} color="#b91c1c" />
+          <Ionicons name="alert-circle-outline" size={16} color="#f87171" />
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryBtn} onPress={loadData}>
-            <Text style={styles.retryBtnText}>Повторить</Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={loadData} activeOpacity={0.7}>
+            <Text style={styles.retryBtnText}>Обновить</Text>
           </TouchableOpacity>
         </View>
       ) : null}
@@ -144,18 +149,21 @@ export default function MyTicketsScreen({ onSelectPhoto, onCreateNew }) {
         renderItem={renderTicketItem}
         contentContainerStyle={styles.listContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0f172a']} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#38bdf8']} tintColor="#38bdf8" />
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Ionicons name="documents-outline" size={48} color="#94a3b8" />
-            <Text style={styles.emptyTitle}>Обращений не зарегистрировано</Text>
+            <View style={styles.emptyIconBox}>
+              <Ionicons name="file-tray-outline" size={28} color="#475569" />
+            </View>
+            <Text style={styles.emptyTitle}>Активных инцидентов нет</Text>
             <Text style={styles.emptySubtitle}>
-              В журнале пока нет активных заявок. При возникновении технических неполадок создайте новое обращение.
+              Журнал пуст. При обнаружении проблем зарегистрируйте новое обращение.
             </Text>
             {onCreateNew && (
-              <TouchableOpacity style={styles.createBtn} onPress={onCreateNew}>
-                <Text style={styles.createBtnText}>Создать обращение</Text>
+              <TouchableOpacity style={styles.createBtn} onPress={onCreateNew} activeOpacity={0.8}>
+                <Ionicons name="add" size={16} color="#ffffff" />
+                <Text style={styles.createBtnText}>Зарегистрировать инцидент</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -168,12 +176,12 @@ export default function MyTicketsScreen({ onSelectPhoto, onCreateNew }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#0b0f17',
   },
   listContent: {
     padding: 16,
     paddingBottom: 30,
-    maxWidth: 720,
+    maxWidth: 680,
     alignSelf: 'center',
     width: '100%',
   },
@@ -181,20 +189,20 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#0b0f17',
   },
   loadingText: {
     marginTop: 8,
     color: '#64748b',
-    fontSize: 13,
+    fontSize: 12,
   },
   card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 10,
+    backgroundColor: '#111827',
+    borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: '#1e293b',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -210,17 +218,26 @@ const styles = StyleSheet.create({
   ticketId: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#0f172a',
+    color: '#f8fafc',
     letterSpacing: 0.3,
   },
   dateText: {
-    fontSize: 12,
-    color: '#94a3b8',
+    fontSize: 11,
+    color: '#64748b',
   },
   statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
+    borderWidth: 1,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   statusBadgeText: {
     fontSize: 11,
@@ -235,12 +252,12 @@ const styles = StyleSheet.create({
   locationText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#334155',
+    color: '#cbd5e1',
     flex: 1,
   },
   descriptionText: {
     fontSize: 13,
-    color: '#334155',
+    color: '#94a3b8',
     lineHeight: 18,
     marginBottom: 10,
   },
@@ -250,14 +267,16 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   tag: {
-    backgroundColor: '#f1f5f9',
+    backgroundColor: '#090d16',
+    borderWidth: 1,
+    borderColor: '#1e293b',
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 4,
+    borderRadius: 6,
   },
   tagText: {
     fontSize: 11,
-    color: '#475569',
+    color: '#64748b',
     fontWeight: '500',
   },
   photosRow: {
@@ -266,30 +285,36 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   thumbImage: {
-    width: 60,
-    height: 60,
+    width: 64,
+    height: 64,
     borderRadius: 6,
-    backgroundColor: '#e2e8f0',
+    borderWidth: 1,
+    borderColor: '#334155',
+    backgroundColor: '#090d16',
   },
   adminNoteBox: {
-    backgroundColor: '#f8fafc',
-    borderLeftWidth: 3,
-    borderLeftColor: '#0f172a',
+    backgroundColor: 'rgba(56, 189, 248, 0.05)',
+    borderLeftWidth: 2,
+    borderLeftColor: '#38bdf8',
     padding: 10,
-    borderRadius: 4,
+    borderRadius: 6,
     marginTop: 6,
+  },
+  adminNoteHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginBottom: 3,
   },
   adminNoteTitle: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#0f172a',
-    marginBottom: 2,
-    textTransform: 'uppercase',
+    color: '#38bdf8',
     letterSpacing: 0.3,
   },
   adminNoteText: {
     fontSize: 12,
-    color: '#334155',
+    color: '#cbd5e1',
     lineHeight: 16,
   },
   emptyContainer: {
@@ -297,33 +322,48 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
     paddingHorizontal: 24,
   },
+  emptyIconBox: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#111827',
+    borderWidth: 1,
+    borderColor: '#1e293b',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
   emptyTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
-    color: '#334155',
-    marginTop: 12,
+    color: '#cbd5e1',
   },
   emptySubtitle: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#64748b',
     textAlign: 'center',
-    marginTop: 6,
-    lineHeight: 18,
-    marginBottom: 20,
+    marginTop: 4,
+    lineHeight: 16,
+    marginBottom: 18,
   },
   createBtn: {
-    backgroundColor: '#0f172a',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#2563eb',
     paddingVertical: 9,
     paddingHorizontal: 16,
     borderRadius: 8,
   },
   createBtnText: {
-    color: '#fff',
-    fontSize: 13,
+    color: '#ffffff',
+    fontSize: 12,
     fontWeight: '600',
   },
   errorBox: {
-    backgroundColor: '#fee2e2',
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.25)',
     padding: 10,
     margin: 16,
     marginBottom: 0,
@@ -333,19 +373,21 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   errorText: {
-    color: '#b91c1c',
+    color: '#f87171',
     fontSize: 12,
     flex: 1,
   },
   retryBtn: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1e293b',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#334155',
   },
   retryBtnText: {
-    color: '#b91c1c',
+    color: '#f87171',
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '600',
   },
 });

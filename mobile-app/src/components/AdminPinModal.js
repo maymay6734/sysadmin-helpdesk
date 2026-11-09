@@ -18,7 +18,7 @@ export default function AdminPinModal({ visible, onClose, onSuccess }) {
 
   const handleVerify = async () => {
     if (!pin.trim()) {
-      setError('Введите PIN-код');
+      setError('Введите код доступа');
       return;
     }
     setLoading(true);
@@ -28,7 +28,7 @@ export default function AdminPinModal({ visible, onClose, onSuccess }) {
       setPin('');
       onSuccess();
     } catch (err) {
-      setError(err.message || 'Неверный PIN-код (по умолчанию: 1234)');
+      setError(err.message || 'Неверный код доступа (по умолчанию: 1234)');
     } finally {
       setLoading(false);
     }
@@ -45,11 +45,11 @@ export default function AdminPinModal({ visible, onClose, onSuccess }) {
       <View style={styles.overlay}>
         <View style={styles.card}>
           <View style={styles.iconCircle}>
-            <Ionicons name="shield-checkmark" size={36} color="#0284c7" />
+            <Ionicons name="shield-checkmark" size={24} color="#38bdf8" />
           </View>
 
-          <Text style={styles.title}>Вход для сисадмина</Text>
-          <Text style={styles.subtitle}>Введите PIN-код для доступа к управлению заявками</Text>
+          <Text style={styles.title}>Консоль диспетчера</Text>
+          <Text style={styles.subtitle}>Введите PIN-код для входа в панель управления инцидентами</Text>
 
           <TextInput
             style={[styles.pinInput, error ? styles.pinInputError : null]}
@@ -61,17 +61,17 @@ export default function AdminPinModal({ visible, onClose, onSuccess }) {
             keyboardType="numeric"
             secureTextEntry={true}
             maxLength={8}
-            placeholder="****"
-            placeholderTextColor="#94a3b8"
+            placeholder="••••"
+            placeholderTextColor="#475569"
             autoFocus={true}
           />
 
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-          <Text style={styles.hint}>Стандартный PIN: 1234</Text>
+          <Text style={styles.hint}>Стандартный доступ: 1234</Text>
 
           <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel}>
+            <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel} activeOpacity={0.7}>
               <Text style={styles.cancelBtnText}>Отмена</Text>
             </TouchableOpacity>
 
@@ -79,6 +79,7 @@ export default function AdminPinModal({ visible, onClose, onSuccess }) {
               style={styles.confirmBtn}
               onPress={handleVerify}
               disabled={loading}
+              activeOpacity={0.8}
             >
               {loading ? (
                 <ActivityIndicator size="small" color="#ffffff" />
@@ -96,7 +97,7 @@ export default function AdminPinModal({ visible, onClose, onSuccess }) {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.7)',
+    backgroundColor: 'rgba(5, 8, 15, 0.85)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -104,94 +105,101 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 360,
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
+    backgroundColor: '#0f172a',
+    borderRadius: 16,
     padding: 24,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#1e293b',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 12,
   },
   iconCircle: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    backgroundColor: '#e0f2fe',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(56, 189, 248, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.25)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 14,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#0f172a',
-    marginBottom: 6,
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#f8fafc',
+    marginBottom: 4,
+    letterSpacing: -0.2,
   },
   subtitle: {
-    fontSize: 13,
-    color: '#64748b',
+    fontSize: 12,
+    color: '#94a3b8',
     textAlign: 'center',
-    marginBottom: 20,
-    paddingHorizontal: 10,
+    marginBottom: 18,
+    lineHeight: 16,
   },
   pinInput: {
-    width: 180,
-    height: 52,
-    borderWidth: 2,
-    borderColor: '#cbd5e1',
-    borderRadius: 12,
-    fontSize: 24,
+    width: 170,
+    height: 48,
+    borderWidth: 1,
+    borderColor: '#334155',
+    borderRadius: 10,
+    fontSize: 22,
     textAlign: 'center',
-    letterSpacing: 8,
+    letterSpacing: 6,
     fontWeight: '700',
-    color: '#0f172a',
-    backgroundColor: '#f8fafc',
+    color: '#f8fafc',
+    backgroundColor: '#090d16',
     marginBottom: 8,
   },
   pinInputError: {
     borderColor: '#ef4444',
   },
   errorText: {
-    color: '#ef4444',
-    fontSize: 13,
+    color: '#f87171',
+    fontSize: 12,
     fontWeight: '500',
     marginBottom: 8,
     textAlign: 'center',
   },
   hint: {
-    fontSize: 12,
-    color: '#94a3b8',
-    marginBottom: 20,
+    fontSize: 11,
+    color: '#64748b',
+    marginBottom: 18,
   },
   buttonRow: {
     flexDirection: 'row',
     width: '100%',
-    gap: 12,
+    gap: 10,
   },
   cancelBtn: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: '#f1f5f9',
+    paddingVertical: 11,
+    borderRadius: 8,
+    backgroundColor: '#1e293b',
+    borderWidth: 1,
+    borderColor: '#334155',
     alignItems: 'center',
   },
   cancelBtnText: {
-    color: '#475569',
-    fontSize: 15,
+    color: '#cbd5e1',
+    fontSize: 13,
     fontWeight: '600',
   },
   confirmBtn: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: '#0284c7',
+    paddingVertical: 11,
+    borderRadius: 8,
+    backgroundColor: '#2563eb',
     alignItems: 'center',
   },
   confirmBtnText: {
     color: '#ffffff',
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '700',
   },
 });

@@ -15,7 +15,7 @@ import { getApiUrl, setApiUrl } from '../config';
 export default function SettingsModal({ visible, onClose, onSaved }) {
   const [url, setUrl] = useState('');
   const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState(null); // { success: bool, message: string }
+  const [testResult, setTestResult] = useState(null);
 
   useEffect(() => {
     if (visible) {
@@ -33,14 +33,14 @@ export default function SettingsModal({ visible, onClose, onSaved }) {
       const clean = targetUrl.trim().replace(/\/+$/, '');
       const resp = await fetch(`${clean}/api/health`, { method: 'GET' });
       if (resp.ok) {
-        setTestResult({ success: true, message: 'Сервер доступен! Соединение успешно.' });
+        setTestResult({ success: true, message: 'Соединение с шлюзом API успешно установлено.' });
       } else {
-        setTestResult({ success: false, message: `Ответ сервера: статус ${resp.status}` });
+        setTestResult({ success: false, message: `Ответ шлюза: статус ${resp.status}` });
       }
     } catch (err) {
       setTestResult({
         success: false,
-        message: 'Не удалось подключиться. Проверьте адрес и включен ли сервер.',
+        message: 'Не удалось связаться с сервером. Проверьте сетевой адрес.',
       });
     } finally {
       setTesting(false);
@@ -49,7 +49,7 @@ export default function SettingsModal({ visible, onClose, onSaved }) {
 
   const handleSave = async () => {
     if (!url.trim()) {
-      Alert.alert('Ошибка', 'Введите адрес сервера');
+      Alert.alert('Ошибка', 'Укажите сетевой адрес');
       return;
     }
     const saved = await setApiUrl(url);
@@ -58,20 +58,20 @@ export default function SettingsModal({ visible, onClose, onSaved }) {
   };
 
   return (
-    <Modal visible={visible} transparent={true} animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent={true} animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.modalCard}>
           <View style={styles.header}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Ionicons name="settings" size={24} color="#0284c7" />
-              <Text style={styles.title}>Настройки подключения</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Ionicons name="pulse" size={18} color="#38bdf8" />
+              <Text style={styles.title}>Сетевые параметры</Text>
             </View>
-            <TouchableOpacity onPress={onClose}>
-              <Ionicons name="close" size={24} color="#64748b" />
+            <TouchableOpacity onPress={onClose} activeOpacity={0.7}>
+              <Ionicons name="close" size={20} color="#94a3b8" />
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.label}>Адрес бэкенд-сервера API:</Text>
+          <Text style={styles.label}>Шлюз API Service Desk</Text>
           <TextInput
             style={styles.input}
             value={url}
@@ -79,12 +79,13 @@ export default function SettingsModal({ visible, onClose, onSaved }) {
               setUrl(txt);
               setTestResult(null);
             }}
-            placeholder="http://192.168.1.161:8000"
+            placeholder="https://..."
+            placeholderTextColor="#475569"
             autoCapitalize="none"
             autoCorrect={false}
           />
           <Text style={styles.hint}>
-            Для работы с телефона укажите IP-адрес вашего компьютера в локальной сети Wi-Fi (например, http://192.168.1.161:8000).
+            По умолчанию запросы направляются через защищенный облачный прокси Cloudflare.
           </Text>
 
           {testResult && (
@@ -96,13 +97,13 @@ export default function SettingsModal({ visible, onClose, onSaved }) {
             >
               <Ionicons
                 name={testResult.success ? 'checkmark-circle' : 'alert-circle'}
-                size={18}
-                color={testResult.success ? '#15803d' : '#b91c1c'}
+                size={16}
+                color={testResult.success ? '#4ade80' : '#f87171'}
               />
               <Text
                 style={[
                   styles.resultText,
-                  { color: testResult.success ? '#15803d' : '#b91c1c' },
+                  { color: testResult.success ? '#4ade80' : '#f87171' },
                 ]}
               >
                 {testResult.message}
@@ -115,19 +116,20 @@ export default function SettingsModal({ visible, onClose, onSaved }) {
               style={styles.testBtn}
               onPress={() => testConnection(url)}
               disabled={testing}
+              activeOpacity={0.8}
             >
               {testing ? (
-                <ActivityIndicator size="small" color="#0284c7" />
+                <ActivityIndicator size="small" color="#38bdf8" />
               ) : (
                 <>
-                  <Ionicons name="pulse" size={18} color="#0284c7" />
-                  <Text style={styles.testBtnText}>Проверить связь</Text>
+                  <Ionicons name="flash-outline" size={15} color="#38bdf8" />
+                  <Text style={styles.testBtnText}>Проверить пинг</Text>
                 </>
               )}
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
-              <Text style={styles.saveBtnText}>Сохранить</Text>
+            <TouchableOpacity style={styles.saveBtn} onPress={handleSave} activeOpacity={0.8}>
+              <Text style={styles.saveBtnText}>Применить</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -139,7 +141,7 @@ export default function SettingsModal({ visible, onClose, onSaved }) {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    backgroundColor: 'rgba(5, 8, 15, 0.85)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -147,14 +149,16 @@ const styles = StyleSheet.create({
   modalCard: {
     width: '100%',
     maxWidth: 420,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#0f172a',
     borderRadius: 16,
     padding: 20,
+    borderWidth: 1,
+    borderColor: '#1e293b',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 10,
   },
   header: {
     flexDirection: 'row',
@@ -163,32 +167,33 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
-    color: '#0f172a',
-    marginLeft: 8,
+    color: '#f8fafc',
   },
   label: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
-    color: '#334155',
+    color: '#94a3b8',
     marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
   },
   input: {
-    borderWidth: 1.5,
-    borderColor: '#cbd5e1',
-    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#334155',
+    borderRadius: 8,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 15,
-    color: '#0f172a',
-    backgroundColor: '#f8fafc',
+    paddingVertical: 9,
+    fontSize: 14,
+    color: '#f8fafc',
+    backgroundColor: '#090d16',
   },
   hint: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#64748b',
     marginTop: 6,
-    lineHeight: 17,
+    lineHeight: 15,
   },
   resultBadge: {
     flexDirection: 'row',
@@ -198,14 +203,18 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   resultSuccess: {
-    backgroundColor: '#dcfce7',
+    backgroundColor: 'rgba(74, 222, 128, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(74, 222, 128, 0.25)',
   },
   resultError: {
-    backgroundColor: '#fee2e2',
+    backgroundColor: 'rgba(248, 113, 113, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(248, 113, 113, 0.25)',
   },
   resultText: {
     marginLeft: 8,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '500',
     flex: 1,
   },
@@ -213,32 +222,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-end',
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 18,
     gap: 10,
   },
   testBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    backgroundColor: '#e0f2fe',
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#161e2e',
+    borderWidth: 1,
+    borderColor: '#222f43',
     gap: 6,
   },
   testBtnText: {
-    color: '#0284c7',
+    color: '#38bdf8',
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: 12,
   },
   saveBtn: {
-    backgroundColor: '#0284c7',
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-    borderRadius: 10,
+    backgroundColor: '#2563eb',
+    paddingVertical: 9,
+    paddingHorizontal: 16,
+    borderRadius: 8,
   },
   saveBtnText: {
     color: '#ffffff',
     fontWeight: '700',
-    fontSize: 14,
+    fontSize: 13,
   },
 });

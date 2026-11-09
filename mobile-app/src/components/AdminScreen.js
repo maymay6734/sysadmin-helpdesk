@@ -23,10 +23,10 @@ const STATUS_TABS = [
 ];
 
 const STATUS_MAP = {
-  new: { label: 'Новое', color: '#0369a1', bg: '#e0f2fe' },
-  in_progress: { label: 'В работе', color: '#b45309', bg: '#fef3c7' },
-  resolved: { label: 'Решено', color: '#15803d', bg: '#dcfce7' },
-  rejected: { label: 'Отклонено', color: '#475569', bg: '#f1f5f9' },
+  new: { label: 'Новый', dot: '#38bdf8', bg: 'rgba(56, 189, 248, 0.1)', border: 'rgba(56, 189, 248, 0.25)' },
+  in_progress: { label: 'В работе', dot: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)', border: 'rgba(245, 158, 11, 0.25)' },
+  resolved: { label: 'Закрыт', dot: '#10b981', bg: 'rgba(16, 185, 129, 0.1)', border: 'rgba(16, 185, 129, 0.25)' },
+  rejected: { label: 'Отклонен', dot: '#94a3b8', bg: 'rgba(148, 163, 184, 0.1)', border: 'rgba(148, 163, 184, 0.2)' },
 };
 
 export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
@@ -97,7 +97,7 @@ export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
       setActiveTicket(null);
       loadData();
     } catch (err) {
-      Alert.alert('Ошибка', 'Не удалось сохранить комментарий');
+      Alert.alert('Ошибка', 'Не удалось сохранить служебную отметку');
     } finally {
       setSavingComment(false);
     }
@@ -114,7 +114,7 @@ export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
       setClearModalVisible(false);
       setClearPin('');
       loadData();
-      Alert.alert('Успешно', 'База данных обращений очищена');
+      Alert.alert('Готово', 'Реестр обращений полностью очищен');
     } catch (err) {
       Alert.alert('Ошибка', err.message || 'Неверный PIN-код');
     } finally {
@@ -143,25 +143,26 @@ export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
             <Text style={styles.ticketId}>{incNumber}</Text>
             <Text style={styles.dateText}>{dateStr}</Text>
           </View>
-          <View style={[styles.statusBadge, { backgroundColor: statusMeta.bg }]}>
-            <Text style={[styles.statusBadgeText, { color: statusMeta.color }]}>
+          <View style={[styles.statusBadge, { backgroundColor: statusMeta.bg, borderColor: statusMeta.border }]}>
+            <View style={[styles.statusDot, { backgroundColor: statusMeta.dot }]} />
+            <Text style={[styles.statusBadgeText, { color: statusMeta.dot }]}>
               {statusMeta.label}
             </Text>
           </View>
         </View>
 
         <View style={styles.locationContainer}>
-          <Ionicons name="location-outline" size={15} color="#0f172a" />
+          <Ionicons name="location-outline" size={14} color="#38bdf8" />
           <Text style={styles.locationTitle}>{item.location}</Text>
         </View>
 
         <Text style={styles.descriptionText}>{item.description}</Text>
 
         <View style={styles.requesterBox}>
-          <Ionicons name="person-outline" size={13} color="#64748b" />
+          <Ionicons name="person-outline" size={12} color="#64748b" />
           <Text style={styles.requesterText}>
             {item.contact_name || 'Сотрудник'}
-            {item.contact_phone ? `  •  тел: ${item.contact_phone}` : ''}
+            {item.contact_phone ? `  •  ${item.contact_phone}` : ''}
           </Text>
         </View>
 
@@ -183,6 +184,7 @@ export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
                   key={i}
                   onPress={() => onSelectPhoto && onSelectPhoto(fullUrl)}
                   style={styles.photoThumbContainer}
+                  activeOpacity={0.8}
                 >
                   <Image source={{ uri: fullUrl }} style={styles.thumbImage} />
                 </TouchableOpacity>
@@ -205,8 +207,9 @@ export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
             <TouchableOpacity
               style={[styles.actionBtn, styles.btnTake]}
               onPress={() => handleStatusChange(item.id, 'in_progress')}
+              activeOpacity={0.8}
             >
-              <Text style={styles.actionBtnWhiteText}>Принять в работу</Text>
+              <Text style={styles.actionBtnWhiteText}>В работу</Text>
             </TouchableOpacity>
           )}
 
@@ -214,8 +217,9 @@ export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
             <TouchableOpacity
               style={[styles.actionBtn, styles.btnResolve]}
               onPress={() => handleStatusChange(item.id, 'resolved')}
+              activeOpacity={0.8}
             >
-              <Text style={styles.actionBtnWhiteText}>Закрыть обращение</Text>
+              <Text style={styles.actionBtnWhiteText}>Закрыть инцидент</Text>
             </TouchableOpacity>
           )}
 
@@ -223,6 +227,7 @@ export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
             <TouchableOpacity
               style={[styles.actionBtn, styles.btnReject]}
               onPress={() => handleStatusChange(item.id, 'rejected')}
+              activeOpacity={0.8}
             >
               <Text style={styles.btnRejectText}>Отклонить</Text>
             </TouchableOpacity>
@@ -232,6 +237,7 @@ export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
             <TouchableOpacity
               style={[styles.actionBtn, styles.btnReopen]}
               onPress={() => handleStatusChange(item.id, 'in_progress')}
+              activeOpacity={0.8}
             >
               <Text style={styles.btnReopenText}>Возобновить</Text>
             </TouchableOpacity>
@@ -240,6 +246,7 @@ export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
           <TouchableOpacity
             style={[styles.actionBtn, styles.btnComment]}
             onPress={() => openCommentModal(item)}
+            activeOpacity={0.8}
           >
             <Text style={styles.btnCommentText}>
               {item.admin_notes ? 'Редактировать ответ' : 'Внести отметку'}
@@ -255,19 +262,25 @@ export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
       {/* Top Admin Bar */}
       <View style={styles.topAdminBar}>
         <View>
-          <Text style={styles.adminBarTitle}>Панель диспетчера инцидентов</Text>
-          <Text style={styles.adminBarSubtitle}>Управление сервисными обращениями</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={styles.adminBarTitle}>Консоль инженера</Text>
+            <View style={styles.engineerBadge}>
+              <Text style={styles.engineerBadgeText}>TIER-1</Text>
+            </View>
+          </View>
+          <Text style={styles.adminBarSubtitle}>Диспетчеризация и контроль инцидентов</Text>
         </View>
         <View style={{ flexDirection: 'row', gap: 6 }}>
           <TouchableOpacity
             style={styles.clearDbBtn}
             onPress={() => setClearModalVisible(true)}
+            activeOpacity={0.7}
           >
-            <Ionicons name="trash-outline" size={15} color="#64748b" />
-            <Text style={styles.clearDbBtnText}>Очистить журнал</Text>
+            <Ionicons name="trash-outline" size={14} color="#94a3b8" />
+            <Text style={styles.clearDbBtnText}>Очистить</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.exitBtn} onPress={onExitAdmin}>
+          <TouchableOpacity style={styles.exitBtn} onPress={onExitAdmin} activeOpacity={0.7}>
             <Text style={styles.exitBtnText}>Выйти</Text>
           </TouchableOpacity>
         </View>
@@ -280,32 +293,32 @@ export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
           <Text style={styles.statLabel}>Всего</Text>
         </View>
         <View style={styles.statCard}>
-          <Text style={[styles.statValue, { color: '#0369a1' }]}>{stats.new}</Text>
+          <Text style={[styles.statValue, { color: '#38bdf8' }]}>{stats.new}</Text>
           <Text style={styles.statLabel}>Ожидают</Text>
         </View>
         <View style={styles.statCard}>
-          <Text style={[styles.statValue, { color: '#b45309' }]}>{stats.in_progress}</Text>
+          <Text style={[styles.statValue, { color: '#f59e0b' }]}>{stats.in_progress}</Text>
           <Text style={styles.statLabel}>В работе</Text>
         </View>
         <View style={styles.statCard}>
-          <Text style={[styles.statValue, { color: '#15803d' }]}>{stats.resolved}</Text>
+          <Text style={[styles.statValue, { color: '#10b981' }]}>{stats.resolved}</Text>
           <Text style={styles.statLabel}>Закрыто</Text>
         </View>
       </View>
 
       {/* Search Input */}
       <View style={styles.searchWrapper}>
-        <Ionicons name="search" size={16} color="#94a3b8" />
+        <Ionicons name="search" size={15} color="#64748b" />
         <TextInput
           style={styles.searchInput}
-          placeholder="Поиск по локации, описанию или заявителю..."
-          placeholderTextColor="#94a3b8"
+          placeholder="Поиск по локации, инциденту или сотруднику..."
+          placeholderTextColor="#475569"
           value={search}
           onChangeText={setSearch}
         />
         {search ? (
-          <TouchableOpacity onPress={() => setSearch('')}>
-            <Ionicons name="close-circle" size={16} color="#94a3b8" />
+          <TouchableOpacity onPress={() => setSearch('')} activeOpacity={0.7}>
+            <Ionicons name="close-circle" size={15} color="#64748b" />
           </TouchableOpacity>
         ) : null}
       </View>
@@ -319,6 +332,7 @@ export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
               key={tab.id}
               style={[styles.tabBtn, isActive && styles.tabBtnActive]}
               onPress={() => setSelectedStatus(tab.id)}
+              activeOpacity={0.7}
             >
               <Text style={[styles.tabBtnText, isActive && styles.tabBtnTextActive]}>
                 {tab.label}
@@ -331,7 +345,7 @@ export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
       {/* Ticket List */}
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="small" color="#0f172a" />
+          <ActivityIndicator size="small" color="#38bdf8" />
         </View>
       ) : (
         <FlatList
@@ -340,7 +354,7 @@ export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
           renderItem={renderTicketCard}
           contentContainerStyle={styles.listContent}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0f172a']} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#38bdf8']} tintColor="#38bdf8" />
           }
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
@@ -355,9 +369,9 @@ export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Отметка по обращению INC-{String(activeTicket?.id).padStart(4, '0')}</Text>
-              <TouchableOpacity onPress={() => setCommentModalVisible(false)}>
-                <Ionicons name="close" size={20} color="#64748b" />
+              <Text style={styles.modalTitle}>Служебная отметка INC-{String(activeTicket?.id).padStart(4, '0')}</Text>
+              <TouchableOpacity onPress={() => setCommentModalVisible(false)} activeOpacity={0.7}>
+                <Ionicons name="close" size={18} color="#94a3b8" />
               </TouchableOpacity>
             </View>
 
@@ -369,7 +383,7 @@ export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
               multiline
               numberOfLines={4}
               placeholder="Изложите выполненные действия, причины сбоя или рекомендации..."
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor="#475569"
               value={adminComment}
               onChangeText={setAdminComment}
               textAlignVertical="top"
@@ -379,6 +393,7 @@ export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
               <TouchableOpacity
                 style={styles.modalCancelBtn}
                 onPress={() => setCommentModalVisible(false)}
+                activeOpacity={0.7}
               >
                 <Text style={styles.modalCancelText}>Отмена</Text>
               </TouchableOpacity>
@@ -386,6 +401,7 @@ export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
                 style={styles.modalSaveBtn}
                 onPress={saveComment}
                 disabled={savingComment}
+                activeOpacity={0.8}
               >
                 {savingComment ? (
                   <ActivityIndicator size="small" color="#fff" />
@@ -403,20 +419,20 @@ export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Очистка журнала</Text>
-              <TouchableOpacity onPress={() => setClearModalVisible(false)}>
-                <Ionicons name="close" size={20} color="#64748b" />
+              <Text style={styles.modalTitle}>Сброс реестра инцидентов</Text>
+              <TouchableOpacity onPress={() => setClearModalVisible(false)} activeOpacity={0.7}>
+                <Ionicons name="close" size={18} color="#94a3b8" />
               </TouchableOpacity>
             </View>
 
             <Text style={styles.modalSubtitle}>
-              Внимание: все зарегистрированные обращения и вложенные фотоматериалы будут безвозвратно удалены.
+              Внимание: все обращения и вложения будут безвозвратно удалены.
             </Text>
 
             <TextInput
-              style={[styles.modalInput, { height: 46 }]}
-              placeholder="Введите PIN-код администратора"
-              placeholderTextColor="#94a3b8"
+              style={[styles.modalInput, { height: 44 }]}
+              placeholder="PIN-код администратора"
+              placeholderTextColor="#475569"
               value={clearPin}
               onChangeText={setClearPin}
               secureTextEntry
@@ -427,6 +443,7 @@ export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
               <TouchableOpacity
                 style={styles.modalCancelBtn}
                 onPress={() => setClearModalVisible(false)}
+                activeOpacity={0.7}
               >
                 <Text style={styles.modalCancelText}>Отмена</Text>
               </TouchableOpacity>
@@ -434,11 +451,12 @@ export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
                 style={[styles.modalSaveBtn, { backgroundColor: '#dc2626' }]}
                 onPress={handleClearDatabase}
                 disabled={clearing}
+                activeOpacity={0.8}
               >
                 {clearing ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  <Text style={styles.modalSaveText}>Удалить все</Text>
+                  <Text style={styles.modalSaveText}>Очистить все</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -452,27 +470,41 @@ export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#0b0f17',
   },
   topAdminBar: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#111827',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: '#1e293b',
   },
   adminBarTitle: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#0f172a',
+    color: '#f8fafc',
+    letterSpacing: -0.2,
+  },
+  engineerBadge: {
+    backgroundColor: 'rgba(56, 189, 248, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.25)',
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  engineerBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#38bdf8',
   },
   adminBarSubtitle: {
     fontSize: 11,
     color: '#64748b',
-    marginTop: 1,
+    marginTop: 2,
   },
   clearDbBtn: {
     flexDirection: 'row',
@@ -482,11 +514,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
-    backgroundColor: '#ffffff',
+    borderColor: '#1e293b',
+    backgroundColor: '#090d16',
   },
   clearDbBtnText: {
-    color: '#64748b',
+    color: '#94a3b8',
     fontSize: 11,
     fontWeight: '600',
   },
@@ -494,11 +526,11 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 6,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: '#1e293b',
     justifyContent: 'center',
   },
   exitBtnText: {
-    color: '#475569',
+    color: '#cbd5e1',
     fontSize: 11,
     fontWeight: '700',
   },
@@ -506,23 +538,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     padding: 12,
     gap: 8,
-    maxWidth: 720,
+    maxWidth: 680,
     alignSelf: 'center',
     width: '100%',
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#111827',
     borderRadius: 8,
     paddingVertical: 8,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: '#1e293b',
   },
   statValue: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#0f172a',
+    color: '#f8fafc',
   },
   statLabel: {
     fontSize: 10,
@@ -534,30 +566,30 @@ const styles = StyleSheet.create({
   searchWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#111827',
     marginHorizontal: 12,
     marginBottom: 8,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 7,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#cbd5e1',
+    borderColor: '#1e293b',
     gap: 8,
-    maxWidth: 720,
+    maxWidth: 680,
     alignSelf: 'center',
     width: '94%',
   },
   searchInput: {
     flex: 1,
     fontSize: 13,
-    color: '#0f172a',
+    color: '#f8fafc',
   },
   tabsRow: {
     flexDirection: 'row',
     marginHorizontal: 12,
     marginBottom: 8,
     gap: 6,
-    maxWidth: 720,
+    maxWidth: 680,
     alignSelf: 'center',
     width: '94%',
   },
@@ -565,28 +597,28 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 6,
     borderRadius: 6,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#111827',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: '#1e293b',
   },
   tabBtnActive: {
-    backgroundColor: '#0f172a',
-    borderColor: '#0f172a',
+    backgroundColor: '#1e293b',
+    borderColor: '#38bdf8',
   },
   tabBtnText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: '#64748b',
   },
   tabBtnTextActive: {
-    color: '#ffffff',
+    color: '#38bdf8',
     fontWeight: '700',
   },
   listContent: {
     padding: 12,
     paddingBottom: 40,
-    maxWidth: 720,
+    maxWidth: 680,
     alignSelf: 'center',
     width: '100%',
   },
@@ -596,12 +628,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   card: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#111827',
     borderRadius: 10,
     padding: 14,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: '#1e293b',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -610,22 +642,31 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   ticketId: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '800',
-    color: '#0f172a',
+    color: '#f8fafc',
     letterSpacing: 0.3,
   },
   dateText: {
     fontSize: 11,
-    color: '#94a3b8',
+    color: '#64748b',
   },
   statusBadge: {
-    paddingHorizontal: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 4,
+    borderWidth: 1,
+  },
+  statusDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
   },
   statusBadgeText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
   },
   locationContainer: {
@@ -637,12 +678,12 @@ const styles = StyleSheet.create({
   locationTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#0f172a',
+    color: '#f8fafc',
     flex: 1,
   },
   descriptionText: {
     fontSize: 13,
-    color: '#334155',
+    color: '#94a3b8',
     lineHeight: 18,
     marginBottom: 8,
   },
@@ -662,14 +703,16 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   tag: {
-    backgroundColor: '#f1f5f9',
+    backgroundColor: '#090d16',
+    borderWidth: 1,
+    borderColor: '#1e293b',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 4,
   },
   tagText: {
-    fontSize: 11,
-    color: '#475569',
+    fontSize: 10,
+    color: '#64748b',
   },
   photosRow: {
     flexDirection: 'row',
@@ -683,12 +726,14 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 6,
-    backgroundColor: '#e2e8f0',
+    borderWidth: 1,
+    borderColor: '#334155',
+    backgroundColor: '#090d16',
   },
   adminNotePreview: {
-    backgroundColor: '#f8fafc',
-    borderLeftWidth: 3,
-    borderLeftColor: '#0f172a',
+    backgroundColor: '#090d16',
+    borderLeftWidth: 2,
+    borderLeftColor: '#38bdf8',
     padding: 8,
     borderRadius: 4,
     marginBottom: 10,
@@ -696,20 +741,20 @@ const styles = StyleSheet.create({
   adminNotePreviewTitle: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#0f172a',
+    color: '#38bdf8',
     textTransform: 'uppercase',
     marginBottom: 2,
   },
   adminNotePreviewText: {
     fontSize: 12,
-    color: '#334155',
+    color: '#cbd5e1',
   },
   actionsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 6,
     borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
+    borderTopColor: '#1e293b',
     paddingTop: 8,
   },
   actionBtn: {
@@ -718,35 +763,35 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   btnTake: {
-    backgroundColor: '#0f172a',
+    backgroundColor: '#2563eb',
   },
   btnResolve: {
-    backgroundColor: '#15803d',
+    backgroundColor: '#059669',
   },
   btnReject: {
-    backgroundColor: '#f1f5f9',
+    backgroundColor: '#1e293b',
   },
   btnRejectText: {
-    color: '#dc2626',
+    color: '#f87171',
     fontSize: 11,
     fontWeight: '600',
   },
   btnReopen: {
-    backgroundColor: '#f1f5f9',
+    backgroundColor: '#1e293b',
   },
   btnReopenText: {
-    color: '#475569',
+    color: '#94a3b8',
     fontSize: 11,
     fontWeight: '600',
   },
   btnComment: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#090d16',
     borderWidth: 1,
-    borderColor: '#cbd5e1',
+    borderColor: '#1e293b',
     marginLeft: 'auto',
   },
   btnCommentText: {
-    color: '#0f172a',
+    color: '#38bdf8',
     fontSize: 11,
     fontWeight: '600',
   },
@@ -761,11 +806,11 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 13,
-    color: '#94a3b8',
+    color: '#64748b',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.5)',
+    backgroundColor: 'rgba(5, 8, 15, 0.85)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -773,9 +818,11 @@ const styles = StyleSheet.create({
   modalContent: {
     width: '100%',
     maxWidth: 420,
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
+    backgroundColor: '#0f172a',
+    borderRadius: 14,
     padding: 16,
+    borderWidth: 1,
+    borderColor: '#1e293b',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -786,23 +833,23 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#0f172a',
+    color: '#f8fafc',
   },
   modalSubtitle: {
     fontSize: 12,
-    color: '#64748b',
+    color: '#94a3b8',
     marginBottom: 10,
     lineHeight: 16,
   },
   modalInput: {
     borderWidth: 1,
-    borderColor: '#cbd5e1',
+    borderColor: '#334155',
     borderRadius: 8,
     padding: 10,
     height: 90,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#090d16',
     fontSize: 13,
-    color: '#0f172a',
+    color: '#f8fafc',
     marginBottom: 14,
   },
   modalActions: {
@@ -814,15 +861,15 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 6,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: '#1e293b',
   },
   modalCancelText: {
-    color: '#475569',
+    color: '#94a3b8',
     fontWeight: '600',
     fontSize: 12,
   },
   modalSaveBtn: {
-    backgroundColor: '#0f172a',
+    backgroundColor: '#2563eb',
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 6,

@@ -18,16 +18,16 @@ const CATEGORIES = [
   { id: 'Оборудование (ПК, ноутбук)', icon: 'desktop-outline' },
   { id: 'Периферия (принтер, сканер)', icon: 'print-outline' },
   { id: 'Сетевая инфраструктура', icon: 'git-network-outline' },
-  { id: 'Программное обеспечение', icon: 'code-working-outline' },
-  { id: 'Учетные записи и права', icon: 'key-outline' },
-  { id: 'Прочее', icon: 'help-circle-outline' },
+  { id: 'Программное обеспечение', icon: 'terminal-outline' },
+  { id: 'Учетные записи и доступы', icon: 'key-outline' },
+  { id: 'Прочее', icon: 'cube-outline' },
 ];
 
 const PRIORITIES = [
-  { id: 'Низкий', color: '#64748b', bg: '#f1f5f9' },
-  { id: 'Средний', color: '#0369a1', bg: '#e0f2fe' },
-  { id: 'Высокий', color: '#b45309', bg: '#fef3c7' },
-  { id: 'Критический', color: '#b91c1c', bg: '#fee2e2' },
+  { id: 'Низкий', dot: '#94a3b8', bg: '#161e2e', border: '#222f43' },
+  { id: 'Средний', dot: '#38bdf8', bg: '#082f49', border: '#0284c7' },
+  { id: 'Высокий', dot: '#f59e0b', bg: '#451a03', border: '#d97706' },
+  { id: 'Критический', dot: '#ef4444', bg: '#450a0a', border: '#dc2626' },
 ];
 
 export default function CreateTicketScreen({ onTicketCreated, onViewMyTickets }) {
@@ -45,7 +45,7 @@ export default function CreateTicketScreen({ onTicketCreated, onViewMyTickets })
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Доступ ограничен', 'Разрешите доступ к медиатеке для прикрепления скриншотов.');
+        Alert.alert('Доступ ограничен', 'Предоставьте доступ к галерее для прикрепления изображений.');
         return;
       }
 
@@ -61,7 +61,7 @@ export default function CreateTicketScreen({ onTicketCreated, onViewMyTickets })
       }
     } catch (e) {
       console.error(e);
-      Alert.alert('Ошибка', 'Не удалось загрузить изображение: ' + e.message);
+      Alert.alert('Ошибка', 'Не удалось загрузить файл: ' + e.message);
     }
   };
 
@@ -69,7 +69,7 @@ export default function CreateTicketScreen({ onTicketCreated, onViewMyTickets })
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Доступ ограничен', 'Разрешите доступ к камере устройства.');
+        Alert.alert('Доступ ограничен', 'Предоставьте доступ к камере.');
         return;
       }
 
@@ -83,7 +83,7 @@ export default function CreateTicketScreen({ onTicketCreated, onViewMyTickets })
       }
     } catch (e) {
       console.error(e);
-      Alert.alert('Ошибка', 'Не удалось открыть камеру: ' + e.message);
+      Alert.alert('Ошибка', 'Не удалось запустить камеру: ' + e.message);
     }
   };
 
@@ -93,11 +93,11 @@ export default function CreateTicketScreen({ onTicketCreated, onViewMyTickets })
 
   const handleSubmit = async () => {
     if (!location.trim()) {
-      Alert.alert('Обязательное поле', 'Укажите точное местоположение (кабинет, корпус или отдел).');
+      Alert.alert('Обязательное поле', 'Укажите локацию (кабинет, корпус или этаж).');
       return;
     }
     if (!description.trim()) {
-      Alert.alert('Обязательное поле', 'Опишите характер неисправности.');
+      Alert.alert('Обязательное поле', 'Подробно опишите симптомы неисправности.');
       return;
     }
 
@@ -121,7 +121,7 @@ export default function CreateTicketScreen({ onTicketCreated, onViewMyTickets })
       setPhotos([]);
       if (onTicketCreated) onTicketCreated(newTicket);
     } catch (err) {
-      Alert.alert('Ошибка отправки', err.message || 'Сбой при отправке формы. Повторите попытку.');
+      Alert.alert('Сбой отправки', err.message || 'Не удалось отправить данные.');
     } finally {
       setSubmitting(false);
     }
@@ -132,18 +132,21 @@ export default function CreateTicketScreen({ onTicketCreated, onViewMyTickets })
       {successTicketId && (
         <View style={styles.successBanner}>
           <View style={styles.successRow}>
-            <Ionicons name="checkmark-done-circle" size={26} color="#15803d" />
-            <View style={{ flex: 1, marginLeft: 10 }}>
-              <Text style={styles.successTitle}>Обращение INC-{String(successTicketId).padStart(4, '0')} зарегистрировано</Text>
-              <Text style={styles.successText}>Заявка передана на рассмотрение в службу администрирования.</Text>
+            <View style={styles.successDot} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.successTitle}>
+                Инцидент зарегистрирован: INC-{String(successTicketId).padStart(4, '0')}
+              </Text>
+              <Text style={styles.successText}>Заявка поставлена в очередь обработки дежурному инженеру.</Text>
             </View>
           </View>
           <View style={styles.successActions}>
             <TouchableOpacity
               style={styles.successBtnSecondary}
               onPress={() => setSuccessTicketId(null)}
+              activeOpacity={0.7}
             >
-              <Text style={styles.successBtnSecondaryText}>Подать еще одно</Text>
+              <Text style={styles.successBtnSecondaryText}>Создать еще</Text>
             </TouchableOpacity>
             {onViewMyTickets && (
               <TouchableOpacity
@@ -152,29 +155,37 @@ export default function CreateTicketScreen({ onTicketCreated, onViewMyTickets })
                   setSuccessTicketId(null);
                   onViewMyTickets();
                 }}
+                activeOpacity={0.8}
               >
-                <Text style={styles.successBtnPrimaryText}>Перейти к журналу</Text>
+                <Text style={styles.successBtnPrimaryText}>К журналу заявок</Text>
               </TouchableOpacity>
             )}
           </View>
         </View>
       )}
 
-      {/* Header card */}
+      {/* Hero card */}
       <View style={styles.headerBlock}>
-        <Text style={styles.headerTitle}>Регистрация инцидента</Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.headerTitle}>Регистрация инцидента</Text>
+          <View style={styles.badgeSla}>
+            <Text style={styles.badgeSlaText}>SLA 15m</Text>
+          </View>
+        </View>
         <Text style={styles.headerSubtitle}>
-          Оформите запрос на техническое обслуживание или устранение неисправности оборудования.
+          Оформление сервисного обращения в службу эксплуатации IT-инфраструктуры
         </Text>
       </View>
 
       {/* Location */}
       <View style={styles.card}>
-        <Text style={styles.fieldLabel}>Местоположение / Локация <Text style={styles.reqStar}>*</Text></Text>
+        <Text style={styles.fieldLabel}>
+          Локация / Рабочее место <Text style={styles.reqStar}>*</Text>
+        </Text>
         <TextInput
           style={styles.textInput}
-          placeholder="Корпус, этаж, номер кабинета или название отдела"
-          placeholderTextColor="#94a3b8"
+          placeholder="Например: Корпус А, 3 этаж, каб. 312"
+          placeholderTextColor="#475569"
           value={location}
           onChangeText={setLocation}
         />
@@ -182,7 +193,7 @@ export default function CreateTicketScreen({ onTicketCreated, onViewMyTickets })
 
       {/* Category */}
       <View style={styles.card}>
-        <Text style={styles.fieldLabel}>Категория обращения</Text>
+        <Text style={styles.fieldLabel}>Категория инцидента</Text>
         <View style={styles.categoryGrid}>
           {CATEGORIES.map((cat) => {
             const isSelected = category === cat.id;
@@ -191,13 +202,20 @@ export default function CreateTicketScreen({ onTicketCreated, onViewMyTickets })
                 key={cat.id}
                 style={[styles.categoryTile, isSelected && styles.categoryTileActive]}
                 onPress={() => setCategory(cat.id)}
+                activeOpacity={0.7}
               >
                 <Ionicons
                   name={cat.icon}
-                  size={18}
-                  color={isSelected ? '#0369a1' : '#64748b'}
+                  size={16}
+                  color={isSelected ? '#38bdf8' : '#64748b'}
                 />
-                <Text style={[styles.categoryTileText, isSelected && styles.categoryTileTextActive]}>
+                <Text
+                  style={[
+                    styles.categoryTileText,
+                    isSelected && styles.categoryTileTextActive,
+                  ]}
+                  numberOfLines={1}
+                >
                   {cat.id}
                 </Text>
               </TouchableOpacity>
@@ -208,11 +226,13 @@ export default function CreateTicketScreen({ onTicketCreated, onViewMyTickets })
 
       {/* Description */}
       <View style={styles.card}>
-        <Text style={styles.fieldLabel}>Описание проблемы <Text style={styles.reqStar}>*</Text></Text>
+        <Text style={styles.fieldLabel}>
+          Описание проблемы <Text style={styles.reqStar}>*</Text>
+        </Text>
         <TextInput
           style={[styles.textInput, styles.textAreaInput]}
-          placeholder="Подробно изложите симптомы сбоя, код ошибки, поведение системы или характер поломки..."
-          placeholderTextColor="#94a3b8"
+          placeholder="Подробно изложите симптомы сбоя, поведение устройства или код ошибки..."
+          placeholderTextColor="#475569"
           value={description}
           onChangeText={setDescription}
           multiline={true}
@@ -223,7 +243,7 @@ export default function CreateTicketScreen({ onTicketCreated, onViewMyTickets })
 
       {/* Priority */}
       <View style={styles.card}>
-        <Text style={styles.fieldLabel}>Приоритет инцидента</Text>
+        <Text style={styles.fieldLabel}>Приоритет</Text>
         <View style={styles.priorityRow}>
           {PRIORITIES.map((p) => {
             const isSelected = priority === p.id;
@@ -232,14 +252,20 @@ export default function CreateTicketScreen({ onTicketCreated, onViewMyTickets })
                 key={p.id}
                 style={[
                   styles.priorityBtn,
-                  {
-                    backgroundColor: isSelected ? p.bg : '#ffffff',
-                    borderColor: isSelected ? p.color : '#e2e8f0',
-                  },
+                  isSelected
+                    ? { backgroundColor: p.bg, borderColor: p.border }
+                    : styles.priorityBtnInactive,
                 ]}
                 onPress={() => setPriority(p.id)}
+                activeOpacity={0.7}
               >
-                <Text style={[styles.priorityBtnText, { color: isSelected ? p.color : '#64748b', fontWeight: isSelected ? '700' : '500' }]}>
+                <View style={[styles.priorityDot, { backgroundColor: p.dot }]} />
+                <Text
+                  style={[
+                    styles.priorityBtnText,
+                    isSelected && { color: '#f8fafc', fontWeight: '700' },
+                  ]}
+                >
                   {p.id}
                 </Text>
               </TouchableOpacity>
@@ -248,20 +274,20 @@ export default function CreateTicketScreen({ onTicketCreated, onViewMyTickets })
         </View>
       </View>
 
-      {/* Photos */}
+      {/* Attachments */}
       <View style={styles.card}>
-        <Text style={styles.fieldLabel}>Фотофиксация / Скриншоты</Text>
+        <Text style={styles.fieldLabel}>Фотоматериалы и вложения</Text>
         <Text style={styles.fieldHint}>
-          Приложите снимки экрана с ошибкой или фото оборудования для ускорения диагностики.
+          Прикрепите фото шильдика оборудования или скриншот ошибки
         </Text>
 
         <View style={styles.photoActions}>
-          <TouchableOpacity style={styles.uploadBtn} onPress={handleTakePhoto}>
-            <Ionicons name="camera-outline" size={18} color="#0f172a" />
-            <Text style={styles.uploadBtnText}>Сделать снимок</Text>
+          <TouchableOpacity style={styles.uploadBtn} onPress={handleTakePhoto} activeOpacity={0.7}>
+            <Ionicons name="camera-outline" size={17} color="#38bdf8" />
+            <Text style={styles.uploadBtnText}>Снимок с камеры</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.uploadBtn} onPress={handlePickImage}>
-            <Ionicons name="attach-outline" size={18} color="#0f172a" />
+          <TouchableOpacity style={styles.uploadBtn} onPress={handlePickImage} activeOpacity={0.7}>
+            <Ionicons name="attach-outline" size={17} color="#38bdf8" />
             <Text style={styles.uploadBtnText}>Выбрать файл</Text>
           </TouchableOpacity>
         </View>
@@ -274,8 +300,9 @@ export default function CreateTicketScreen({ onTicketCreated, onViewMyTickets })
                 <TouchableOpacity
                   style={styles.photoDeleteBtn}
                   onPress={() => handleRemovePhoto(idx)}
+                  activeOpacity={0.7}
                 >
-                  <Ionicons name="close" size={16} color="#ffffff" />
+                  <Ionicons name="close" size={14} color="#f8fafc" />
                 </TouchableOpacity>
               </View>
             ))}
@@ -283,15 +310,15 @@ export default function CreateTicketScreen({ onTicketCreated, onViewMyTickets })
         )}
       </View>
 
-      {/* Requester Contact */}
+      {/* Contact info */}
       <View style={styles.card}>
-        <Text style={styles.fieldLabel}>Контактные данные заявителя</Text>
+        <Text style={styles.fieldLabel}>Данные заявителя</Text>
         <View style={styles.contactFields}>
           <View style={{ flex: 1 }}>
             <TextInput
               style={styles.textInput}
               placeholder="ФИО сотрудника"
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor="#475569"
               value={contactName}
               onChangeText={setContactName}
             />
@@ -299,8 +326,8 @@ export default function CreateTicketScreen({ onTicketCreated, onViewMyTickets })
           <View style={{ flex: 1 }}>
             <TextInput
               style={styles.textInput}
-              placeholder="Телефон / Внутренний номер"
-              placeholderTextColor="#94a3b8"
+              placeholder="Телефон / Внутренний"
+              placeholderTextColor="#475569"
               value={contactPhone}
               onChangeText={setContactPhone}
               keyboardType="phone-pad"
@@ -309,16 +336,20 @@ export default function CreateTicketScreen({ onTicketCreated, onViewMyTickets })
         </View>
       </View>
 
-      {/* Submit */}
+      {/* Submit Button */}
       <TouchableOpacity
         style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
         onPress={handleSubmit}
         disabled={submitting}
+        activeOpacity={0.8}
       >
         {submitting ? (
           <ActivityIndicator color="#ffffff" size="small" />
         ) : (
-          <Text style={styles.submitButtonText}>Зарегистрировать обращение</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Ionicons name="send" size={16} color="#ffffff" />
+            <Text style={styles.submitButtonText}>Зарегистрировать инцидент</Text>
+          </View>
         )}
       </TouchableOpacity>
     </ScrollView>
@@ -328,65 +359,84 @@ export default function CreateTicketScreen({ onTicketCreated, onViewMyTickets })
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#0b0f17',
   },
   content: {
     padding: 16,
     paddingBottom: 40,
-    maxWidth: 720,
+    maxWidth: 680,
     alignSelf: 'center',
     width: '100%',
   },
   headerBlock: {
     marginBottom: 16,
-    paddingVertical: 4,
+    paddingTop: 4,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#0f172a',
-    letterSpacing: -0.3,
+    color: '#f8fafc',
+    letterSpacing: -0.4,
+  },
+  badgeSla: {
+    backgroundColor: 'rgba(56, 189, 248, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.25)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  badgeSlaText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#38bdf8',
+    letterSpacing: 0.5,
   },
   headerSubtitle: {
     fontSize: 13,
-    color: '#64748b',
+    color: '#94a3b8',
     marginTop: 4,
     lineHeight: 18,
   },
   card: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#111827',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: '#1e293b',
   },
   fieldLabel: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
-    color: '#1e293b',
+    color: '#cbd5e1',
     marginBottom: 8,
+    letterSpacing: 0.3,
     textTransform: 'uppercase',
-    letterSpacing: 0.4,
   },
   reqStar: {
-    color: '#dc2626',
+    color: '#f87171',
   },
   fieldHint: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#64748b',
     marginBottom: 10,
-    lineHeight: 16,
+    lineHeight: 15,
   },
   textInput: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#090d16',
     borderWidth: 1,
-    borderColor: '#cbd5e1',
+    borderColor: '#1e293b',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
-    color: '#0f172a',
+    color: '#f8fafc',
   },
   textAreaInput: {
     height: 100,
@@ -401,24 +451,24 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#090d16',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: '#1e293b',
     borderRadius: 8,
     padding: 10,
     gap: 8,
   },
   categoryTileActive: {
-    backgroundColor: '#f0f9ff',
+    backgroundColor: '#082f49',
     borderColor: '#0284c7',
   },
   categoryTileText: {
     fontSize: 12,
-    color: '#475569',
+    color: '#94a3b8',
     fontWeight: '500',
   },
   categoryTileTextActive: {
-    color: '#0369a1',
+    color: '#38bdf8',
     fontWeight: '700',
   },
   priorityRow: {
@@ -427,14 +477,27 @@ const styles = StyleSheet.create({
   },
   priorityBtn: {
     flex: 1,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 9,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 6,
+  },
+  priorityBtnInactive: {
+    backgroundColor: '#090d16',
+    borderColor: '#1e293b',
+  },
+  priorityDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   priorityBtnText: {
-    fontSize: 12,
+    fontSize: 11,
+    color: '#94a3b8',
+    fontWeight: '500',
   },
   photoActions: {
     flexDirection: 'row',
@@ -445,16 +508,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#090d16',
     borderWidth: 1,
-    borderColor: '#cbd5e1',
+    borderColor: '#1e293b',
     borderRadius: 8,
     paddingVertical: 10,
     gap: 6,
   },
   uploadBtnText: {
-    fontSize: 13,
-    color: '#1e293b',
+    fontSize: 12,
+    color: '#cbd5e1',
     fontWeight: '600',
   },
   photoThumbList: {
@@ -467,14 +530,16 @@ const styles = StyleSheet.create({
   photoThumb: {
     width: 72,
     height: 72,
-    borderRadius: 6,
-    backgroundColor: '#e2e8f0',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#334155',
+    backgroundColor: '#090d16',
   },
   photoDeleteBtn: {
     position: 'absolute',
     top: -6,
     right: -6,
-    backgroundColor: '#0f172a',
+    backgroundColor: '#ef4444',
     borderRadius: 10,
     width: 20,
     height: 20,
@@ -486,65 +551,77 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   submitButton: {
-    backgroundColor: '#0f172a',
+    backgroundColor: '#2563eb',
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
+    shadowColor: '#2563eb',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 4,
   },
   submitButtonDisabled: {
-    opacity: 0.6,
+    opacity: 0.5,
   },
   submitButtonText: {
     color: '#ffffff',
     fontSize: 14,
     fontWeight: '700',
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   successBanner: {
-    backgroundColor: '#f0fdf4',
+    backgroundColor: 'rgba(16, 185, 129, 0.08)',
     borderWidth: 1,
-    borderColor: '#bbf7d0',
-    borderRadius: 10,
-    padding: 14,
+    borderColor: 'rgba(16, 185, 129, 0.3)',
+    borderRadius: 12,
+    padding: 16,
     marginBottom: 16,
   },
   successRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 10,
+  },
+  successDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#10b981',
   },
   successTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#15803d',
+    color: '#34d399',
   },
   successText: {
     fontSize: 12,
-    color: '#166534',
+    color: '#94a3b8',
     marginTop: 2,
   },
   successActions: {
     flexDirection: 'row',
     gap: 10,
-    marginTop: 10,
+    marginTop: 12,
   },
   successBtnSecondary: {
-    backgroundColor: '#ffffff',
-    paddingVertical: 6,
+    backgroundColor: '#111827',
+    paddingVertical: 7,
     paddingHorizontal: 12,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#cbd5e1',
+    borderColor: '#334155',
   },
   successBtnSecondaryText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#334155',
+    color: '#cbd5e1',
   },
   successBtnPrimary: {
-    backgroundColor: '#15803d',
-    paddingVertical: 6,
+    backgroundColor: '#059669',
+    paddingVertical: 7,
     paddingHorizontal: 12,
     borderRadius: 6,
   },

@@ -8,8 +8,8 @@ export default function PhotoViewerModal({ visible, imageUrl, onClose }) {
   return (
     <Modal visible={visible} transparent={true} animationType="fade" onRequestClose={onClose}>
       <View style={styles.backdrop}>
-        <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
-          <Ionicons name="close-circle" size={38} color="#ffffff" />
+        <TouchableOpacity style={styles.closeBtn} onPress={onClose} activeOpacity={0.7}>
+          <Ionicons name="close" size={24} color="#f8fafc" />
         </TouchableOpacity>
         <Image
           source={{ uri: imageUrl }}
@@ -17,7 +17,8 @@ export default function PhotoViewerModal({ visible, imageUrl, onClose }) {
           resizeMode="contain"
         />
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Фотография проблемы</Text>
+          <Ionicons name="image-outline" size={14} color="#94a3b8" />
+          <Text style={styles.footerText}>Вложение инцидента</Text>
         </View>
       </View>
     </Modal>
@@ -27,7 +28,7 @@ export default function PhotoViewerModal({ visible, imageUrl, onClose }) {
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(10, 15, 30, 0.95)',
+    backgroundColor: 'rgba(5, 8, 15, 0.96)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -36,23 +37,37 @@ const styles = StyleSheet.create({
     top: 50,
     right: 20,
     zIndex: 10,
-    padding: 8,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#161e2e',
+    borderWidth: 1,
+    borderColor: '#222f43',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   image: {
-    width: Dimensions.get('window').width * 0.95,
-    height: Dimensions.get('window').height * 0.75,
+    width: Dimensions.get('window').width * 0.94,
+    height: Dimensions.get('window').height * 0.76,
+    borderRadius: 8,
   },
   footer: {
     position: 'absolute',
-    bottom: 40,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    bottom: 36,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#111827',
+    borderWidth: 1,
+    borderColor: '#1f293d',
+    paddingVertical: 6,
+    paddingHorizontal: 14,
     borderRadius: 20,
   },
   footerText: {
-    color: '#fff',
-    fontSize: 14,
+    color: '#94a3b8',
+    fontSize: 12,
     fontWeight: '500',
+    letterSpacing: 0.2,
   },
 });
