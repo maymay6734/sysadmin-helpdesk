@@ -1,15 +1,20 @@
 FROM python:3.11-slim
 
+# Create user with UID 1000 required by Hugging Face Spaces
+RUN useradd -m -u 1000 user
+USER user
+ENV HOME=/home/user \
+    PATH=/home/user/.local/bin:$PATH
+
 WORKDIR /app
 
 # Install dependencies
-COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY --chown=user:user backend/requirements.txt requirements.txt
+RUN pip install --no-cache-dir --user -r requirements.txt
 
-# Copy backend application and built static web client
-COPY backend/ .
+# Copy application files (FastAPI + static web app)
+COPY --chown=user:user backend/ .
 
-ENV PORT=80
-EXPOSE 80
+EXPOSE 7860
 
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-80}"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "7860"]
