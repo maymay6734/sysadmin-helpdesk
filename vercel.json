@@ -1,14 +1,16 @@
 {
-  "version": 2,
-  "outputDirectory": "public",
+  "buildCommand": null,
+  "devCommand": null,
+  "installCommand": null,
+  "framework": null,
   "rewrites": [
     {
-      "source": "/api/:match*",
-      "destination": "https://sysadmin-helpdesk.onrender.com/api/:match*"
+      "source": "/api/(.*)",
+      "destination": "https://sysadmin-helpdesk.onrender.com/api/$1"
     },
     {
-      "source": "/uploads/:match*",
-      "destination": "https://sysadmin-helpdesk.onrender.com/uploads/:match*"
+      "source": "/uploads/(.*)",
+      "destination": "https://sysadmin-helpdesk.onrender.com/uploads/$1"
     }
   ]
 }
