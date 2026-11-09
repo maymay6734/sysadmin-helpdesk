@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "https://sysadmin-helpdesk.onrender.com/$1"
+    }
+  ]
+}
