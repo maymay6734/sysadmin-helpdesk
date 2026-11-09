@@ -22,7 +22,7 @@ def init_db():
         location TEXT NOT NULL,
         description TEXT NOT NULL,
         category TEXT DEFAULT 'Общее',
-        priority TEXT DEFAULT 'Обычный',
+        priority TEXT DEFAULT 'Средний',
         contact_name TEXT DEFAULT 'Сотрудник',
         contact_phone TEXT DEFAULT '',
         status TEXT DEFAULT 'new',
@@ -48,7 +48,7 @@ def create_ticket(
     location: str,
     description: str,
     category: str = "Общее",
-    priority: str = "Обычный",
+    priority: str = "Средний",
     contact_name: str = "Сотрудник",
     contact_phone: str = "",
     image_filenames: Optional[List[str]] = None
@@ -148,6 +148,28 @@ def update_ticket(ticket_id: int, status: Optional[str] = None, admin_notes: Opt
     conn.commit()
     conn.close()
     return get_ticket(ticket_id)
+
+def clear_all_tickets():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM ticket_images")
+    cursor.execute("DELETE FROM tickets")
+    try:
+        cursor.execute("DELETE FROM sqlite_sequence WHERE name IN ('tickets', 'ticket_images')")
+    except Exception:
+        pass
+    conn.commit()
+    conn.close()
+
+    # Clean local uploads
+    if os.path.exists(UPLOAD_DIR):
+        for fname in os.listdir(UPLOAD_DIR):
+            fpath = os.path.join(UPLOAD_DIR, fname)
+            if os.path.isfile(fpath):
+                try:
+                    os.remove(fpath)
+                except Exception:
+                    pass
 
 def get_statistics() -> Dict[str, int]:
     conn = get_db_connection()

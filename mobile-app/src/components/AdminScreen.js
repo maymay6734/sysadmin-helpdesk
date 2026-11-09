@@ -13,20 +13,20 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { fetchTickets, fetchStats, updateTicketStatus, getImageUrl } from '../api';
+import { fetchTickets, fetchStats, updateTicketStatus, clearAllTickets, getImageUrl } from '../api';
 
 const STATUS_TABS = [
   { id: 'all', label: 'Все' },
-  { id: 'new', label: 'Новые' },
+  { id: 'new', label: 'Ожидают' },
   { id: 'in_progress', label: 'В работе' },
-  { id: 'resolved', label: 'Решенные' },
+  { id: 'resolved', label: 'Закрытые' },
 ];
 
 const STATUS_MAP = {
-  new: { label: 'Новая', color: '#0284c7', bg: '#e0f2fe', icon: 'sparkles' },
-  in_progress: { label: 'В работе', color: '#d97706', bg: '#fef3c7', icon: 'construct' },
-  resolved: { label: 'Выполнено', color: '#16a34a', bg: '#dcfce7', icon: 'checkmark-circle' },
-  rejected: { label: 'Отклонено', color: '#dc2626', bg: '#fee2e2', icon: 'close-circle' },
+  new: { label: 'Новое', color: '#0369a1', bg: '#e0f2fe' },
+  in_progress: { label: 'В работе', color: '#b45309', bg: '#fef3c7' },
+  resolved: { label: 'Решено', color: '#15803d', bg: '#dcfce7' },
+  rejected: { label: 'Отклонено', color: '#475569', bg: '#f1f5f9' },
 };
 
 export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
@@ -43,6 +43,11 @@ export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
   const [adminComment, setAdminComment] = useState('');
   const [savingComment, setSavingComment] = useState(false);
 
+  // Clear modal
+  const [clearModalVisible, setClearModalVisible] = useState(false);
+  const [clearPin, setClearPin] = useState('');
+  const [clearing, setClearing] = useState(false);
+
   const loadData = useCallback(async () => {
     try {
       const [ticketsData, statsData] = await Promise.all([
@@ -53,7 +58,6 @@ export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
       setStats(statsData);
     } catch (err) {
       console.error(err);
-      Alert.alert('Ошибка', 'Не удалось связаться с сервером');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -74,7 +78,7 @@ export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
       await updateTicketStatus(ticketId, newStatus);
       loadData();
     } catch (err) {
-      Alert.alert('Ошибка', err.message || 'Не удалось обновить статус');
+      Alert.alert('Ошибка', err.message || 'Сбой обновления статуса');
     }
   };
 
@@ -99,82 +103,77 @@ export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
     }
   };
 
+  const handleClearDatabase = async () => {
+    if (!clearPin.trim()) {
+      Alert.alert('Ошибка', 'Введите PIN-код для подтверждения');
+      return;
+    }
+    setClearing(true);
+    try {
+      await clearAllTickets(clearPin);
+      setClearModalVisible(false);
+      setClearPin('');
+      loadData();
+      Alert.alert('Успешно', 'База данных обращений очищена');
+    } catch (err) {
+      Alert.alert('Ошибка', err.message || 'Неверный PIN-код');
+    } finally {
+      setClearing(false);
+    }
+  };
+
   const renderTicketCard = ({ item }) => {
     const statusMeta = STATUS_MAP[item.status] || STATUS_MAP.new;
     const dateStr = item.created_at
       ? new Date(item.created_at).toLocaleString('ru-RU', {
           day: '2-digit',
           month: '2-digit',
+          year: 'numeric',
           hour: '2-digit',
           minute: '2-digit',
         })
       : '';
 
+    const incNumber = `INC-${String(item.id).padStart(4, '0')}`;
+
     return (
       <View style={styles.card}>
-        {/* Top Header */}
         <View style={styles.cardHeader}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={styles.ticketId}>#{item.id}</Text>
+            <Text style={styles.ticketId}>{incNumber}</Text>
             <Text style={styles.dateText}>{dateStr}</Text>
           </View>
           <View style={[styles.statusBadge, { backgroundColor: statusMeta.bg }]}>
-            <Ionicons name={statusMeta.icon} size={12} color={statusMeta.color} />
             <Text style={[styles.statusBadgeText, { color: statusMeta.color }]}>
               {statusMeta.label}
             </Text>
           </View>
         </View>
 
-        {/* Location - High visibility */}
         <View style={styles.locationContainer}>
-          <Ionicons name="location" size={18} color="#0284c7" />
+          <Ionicons name="location-outline" size={15} color="#0f172a" />
           <Text style={styles.locationTitle}>{item.location}</Text>
         </View>
 
-        {/* Description */}
         <Text style={styles.descriptionText}>{item.description}</Text>
 
-        {/* Requester Contact */}
         <View style={styles.requesterBox}>
-          <Ionicons name="person" size={14} color="#64748b" />
+          <Ionicons name="person-outline" size={13} color="#64748b" />
           <Text style={styles.requesterText}>
             {item.contact_name || 'Сотрудник'}
             {item.contact_phone ? `  •  тел: ${item.contact_phone}` : ''}
           </Text>
         </View>
 
-        {/* Badges */}
         <View style={styles.metaRow}>
           <View style={styles.tag}>
             <Text style={styles.tagText}>{item.category || 'Общее'}</Text>
           </View>
-          <View
-            style={[
-              styles.tag,
-              item.priority.includes('Срочно')
-                ? { backgroundColor: '#fee2e2' }
-                : item.priority === 'Высокий'
-                ? { backgroundColor: '#fef3c7' }
-                : null,
-            ]}
-          >
-            <Text
-              style={[
-                styles.tagText,
-                item.priority.includes('Срочно')
-                  ? { color: '#dc2626' }
-                  : item.priority === 'Высокий'
-                  ? { color: '#d97706' }
-                  : null,
-              ]}
-            >
-              {item.priority}
-            </Text>
+          <View style={styles.tag}>
+            <Text style={styles.tagText}>Приоритет: {item.priority}</Text>
           </View>
         </View>
 
-        {/* Photos */}
         {item.images && item.images.length > 0 && (
           <View style={styles.photosRow}>
             {item.images.map((img, i) => {
@@ -186,34 +185,28 @@ export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
                   style={styles.photoThumbContainer}
                 >
                   <Image source={{ uri: fullUrl }} style={styles.thumbImage} />
-                  <View style={styles.photoZoomOverlay}>
-                    <Ionicons name="search" size={14} color="#ffffff" />
-                  </View>
                 </TouchableOpacity>
               );
             })}
           </View>
         )}
 
-        {/* Admin note preview */}
         {item.admin_notes ? (
           <View style={styles.adminNotePreview}>
-            <Ionicons name="chatbubble-ellipses" size={14} color="#0284c7" />
+            <Text style={styles.adminNotePreviewTitle}>Служебная отметка:</Text>
             <Text style={styles.adminNotePreviewText} numberOfLines={2}>
               {item.admin_notes}
             </Text>
           </View>
         ) : null}
 
-        {/* Admin Action Buttons */}
         <View style={styles.actionsContainer}>
           {item.status === 'new' && (
             <TouchableOpacity
               style={[styles.actionBtn, styles.btnTake]}
               onPress={() => handleStatusChange(item.id, 'in_progress')}
             >
-              <Ionicons name="play" size={14} color="#ffffff" />
-              <Text style={styles.actionBtnWhiteText}>Взять в работу</Text>
+              <Text style={styles.actionBtnWhiteText}>Принять в работу</Text>
             </TouchableOpacity>
           )}
 
@@ -222,8 +215,7 @@ export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
               style={[styles.actionBtn, styles.btnResolve]}
               onPress={() => handleStatusChange(item.id, 'resolved')}
             >
-              <Ionicons name="checkmark" size={16} color="#ffffff" />
-              <Text style={styles.actionBtnWhiteText}>Выполнено</Text>
+              <Text style={styles.actionBtnWhiteText}>Закрыть обращение</Text>
             </TouchableOpacity>
           )}
 
@@ -241,8 +233,7 @@ export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
               style={[styles.actionBtn, styles.btnReopen]}
               onPress={() => handleStatusChange(item.id, 'in_progress')}
             >
-              <Ionicons name="refresh" size={14} color="#475569" />
-              <Text style={styles.btnReopenText}>Вернуть в работу</Text>
+              <Text style={styles.btnReopenText}>Возобновить</Text>
             </TouchableOpacity>
           )}
 
@@ -250,9 +241,8 @@ export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
             style={[styles.actionBtn, styles.btnComment]}
             onPress={() => openCommentModal(item)}
           >
-            <Ionicons name="create-outline" size={15} color="#0284c7" />
             <Text style={styles.btnCommentText}>
-              {item.admin_notes ? 'Изменить ответ' : 'Ответить'}
+              {item.admin_notes ? 'Редактировать ответ' : 'Внести отметку'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -264,14 +254,23 @@ export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
     <View style={styles.container}>
       {/* Top Admin Bar */}
       <View style={styles.topAdminBar}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Ionicons name="shield-checkmark" size={20} color="#0284c7" />
-          <Text style={styles.adminBarTitle}>Панель сисадмина</Text>
+        <View>
+          <Text style={styles.adminBarTitle}>Панель диспетчера инцидентов</Text>
+          <Text style={styles.adminBarSubtitle}>Управление сервисными обращениями</Text>
         </View>
-        <TouchableOpacity style={styles.exitBtn} onPress={onExitAdmin}>
-          <Ionicons name="log-out-outline" size={16} color="#ef4444" />
-          <Text style={styles.exitBtnText}>Выйти</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 6 }}>
+          <TouchableOpacity
+            style={styles.clearDbBtn}
+            onPress={() => setClearModalVisible(true)}
+          >
+            <Ionicons name="trash-outline" size={15} color="#64748b" />
+            <Text style={styles.clearDbBtnText}>Очистить журнал</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.exitBtn} onPress={onExitAdmin}>
+            <Text style={styles.exitBtnText}>Выйти</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Stats Cards */}
@@ -280,33 +279,33 @@ export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
           <Text style={styles.statValue}>{stats.total}</Text>
           <Text style={styles.statLabel}>Всего</Text>
         </View>
-        <View style={[styles.statCard, { borderLeftColor: '#0284c7', borderLeftWidth: 3 }]}>
-          <Text style={[styles.statValue, { color: '#0284c7' }]}>{stats.new}</Text>
-          <Text style={styles.statLabel}>Новые</Text>
+        <View style={styles.statCard}>
+          <Text style={[styles.statValue, { color: '#0369a1' }]}>{stats.new}</Text>
+          <Text style={styles.statLabel}>Ожидают</Text>
         </View>
-        <View style={[styles.statCard, { borderLeftColor: '#d97706', borderLeftWidth: 3 }]}>
-          <Text style={[styles.statValue, { color: '#d97706' }]}>{stats.in_progress}</Text>
+        <View style={styles.statCard}>
+          <Text style={[styles.statValue, { color: '#b45309' }]}>{stats.in_progress}</Text>
           <Text style={styles.statLabel}>В работе</Text>
         </View>
-        <View style={[styles.statCard, { borderLeftColor: '#16a34a', borderLeftWidth: 3 }]}>
-          <Text style={[styles.statValue, { color: '#16a34a' }]}>{stats.resolved}</Text>
-          <Text style={styles.statLabel}>Решено</Text>
+        <View style={styles.statCard}>
+          <Text style={[styles.statValue, { color: '#15803d' }]}>{stats.resolved}</Text>
+          <Text style={styles.statLabel}>Закрыто</Text>
         </View>
       </View>
 
       {/* Search Input */}
       <View style={styles.searchWrapper}>
-        <Ionicons name="search" size={18} color="#94a3b8" />
+        <Ionicons name="search" size={16} color="#94a3b8" />
         <TextInput
           style={styles.searchInput}
-          placeholder="Поиск по кабинету, описанию или имени..."
+          placeholder="Поиск по локации, описанию или заявителю..."
           placeholderTextColor="#94a3b8"
           value={search}
           onChangeText={setSearch}
         />
         {search ? (
           <TouchableOpacity onPress={() => setSearch('')}>
-            <Ionicons name="close-circle" size={18} color="#94a3b8" />
+            <Ionicons name="close-circle" size={16} color="#94a3b8" />
           </TouchableOpacity>
         ) : null}
       </View>
@@ -332,7 +331,7 @@ export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
       {/* Ticket List */}
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0284c7" />
+          <ActivityIndicator size="small" color="#0f172a" />
         </View>
       ) : (
         <FlatList
@@ -341,36 +340,35 @@ export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
           renderItem={renderTicketCard}
           contentContainerStyle={styles.listContent}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0284c7']} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0f172a']} />
           }
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Ionicons name="checkmark-done-circle-outline" size={56} color="#cbd5e1" />
-              <Text style={styles.emptyTitle}>Нет заявок по данному фильтру</Text>
+              <Text style={styles.emptyTitle}>Обращений по данному критерию нет</Text>
             </View>
           }
         />
       )}
 
       {/* Comment / Response Modal */}
-      <Modal visible={commentModalVisible} transparent animationType="slide">
+      <Modal visible={commentModalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Ответ по заявке #{activeTicket?.id}</Text>
+              <Text style={styles.modalTitle}>Отметка по обращению INC-{String(activeTicket?.id).padStart(4, '0')}</Text>
               <TouchableOpacity onPress={() => setCommentModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#64748b" />
+                <Ionicons name="close" size={20} color="#64748b" />
               </TouchableOpacity>
             </View>
 
             <Text style={styles.modalSubtitle}>
-              Этот комментарий увидят сотрудники в статусе заявки:
+              Официальное заключение или комментарий для пользователя:
             </Text>
             <TextInput
               style={styles.modalInput}
               multiline
               numberOfLines={4}
-              placeholder="Например: Заменил картридж, перезагрузил свитч, всё работает."
+              placeholder="Изложите выполненные действия, причины сбоя или рекомендации..."
               placeholderTextColor="#94a3b8"
               value={adminComment}
               onChangeText={setAdminComment}
@@ -392,7 +390,55 @@ export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
                 {savingComment ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  <Text style={styles.modalSaveText}>Сохранить ответ</Text>
+                  <Text style={styles.modalSaveText}>Сохранить</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Clear Database Modal */}
+      <Modal visible={clearModalVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Очистка журнала</Text>
+              <TouchableOpacity onPress={() => setClearModalVisible(false)}>
+                <Ionicons name="close" size={20} color="#64748b" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalSubtitle}>
+              Внимание: все зарегистрированные обращения и вложенные фотоматериалы будут безвозвратно удалены.
+            </Text>
+
+            <TextInput
+              style={[styles.modalInput, { height: 46 }]}
+              placeholder="Введите PIN-код администратора"
+              placeholderTextColor="#94a3b8"
+              value={clearPin}
+              onChangeText={setClearPin}
+              secureTextEntry
+              keyboardType="numeric"
+            />
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalCancelBtn}
+                onPress={() => setClearModalVisible(false)}
+              >
+                <Text style={styles.modalCancelText}>Отмена</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalSaveBtn, { backgroundColor: '#dc2626' }]}
+                onPress={handleClearDatabase}
+                disabled={clearing}
+              >
+                {clearing ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.modalSaveText}>Удалить все</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -406,7 +452,7 @@ export default function AdminScreen({ onSelectPhoto, onExitAdmin }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: '#f8fafc',
   },
   topAdminBar: {
     backgroundColor: '#ffffff',
@@ -419,65 +465,91 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e2e8f0',
   },
   adminBarTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
     color: '#0f172a',
   },
-  exitBtn: {
+  adminBarSubtitle: {
+    fontSize: 11,
+    color: '#64748b',
+    marginTop: 1,
+  },
+  clearDbBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingVertical: 4,
+    paddingVertical: 6,
     paddingHorizontal: 8,
-    borderRadius: 8,
-    backgroundColor: '#fee2e2',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    backgroundColor: '#ffffff',
+  },
+  clearDbBtnText: {
+    color: '#64748b',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  exitBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    backgroundColor: '#f1f5f9',
+    justifyContent: 'center',
   },
   exitBtnText: {
-    color: '#ef4444',
-    fontSize: 12,
+    color: '#475569',
+    fontSize: 11,
     fontWeight: '700',
   },
   statsGrid: {
     flexDirection: 'row',
     padding: 12,
     gap: 8,
+    maxWidth: 720,
+    alignSelf: 'center',
+    width: '100%',
   },
   statCard: {
     flex: 1,
     backgroundColor: '#ffffff',
-    borderRadius: 10,
-    paddingVertical: 10,
+    borderRadius: 8,
+    paddingVertical: 8,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#e2e8f0',
   },
   statValue: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '800',
     color: '#0f172a',
   },
   statLabel: {
-    fontSize: 11,
+    fontSize: 10,
     color: '#64748b',
     marginTop: 2,
-    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
   },
   searchWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#ffffff',
     marginHorizontal: 12,
-    marginBottom: 10,
+    marginBottom: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 10,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#cbd5e1',
     gap: 8,
+    maxWidth: 720,
+    alignSelf: 'center',
+    width: '94%',
   },
   searchInput: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 13,
     color: '#0f172a',
   },
   tabsRow: {
@@ -485,21 +557,27 @@ const styles = StyleSheet.create({
     marginHorizontal: 12,
     marginBottom: 8,
     gap: 6,
+    maxWidth: 720,
+    alignSelf: 'center',
+    width: '94%',
   },
   tabBtn: {
     flex: 1,
-    paddingVertical: 7,
-    borderRadius: 8,
-    backgroundColor: '#e2e8f0',
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: '#ffffff',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
   },
   tabBtnActive: {
-    backgroundColor: '#0284c7',
+    backgroundColor: '#0f172a',
+    borderColor: '#0f172a',
   },
   tabBtnText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#475569',
+    color: '#64748b',
   },
   tabBtnTextActive: {
     color: '#ffffff',
@@ -508,6 +586,9 @@ const styles = StyleSheet.create({
   listContent: {
     padding: 12,
     paddingBottom: 40,
+    maxWidth: 720,
+    alignSelf: 'center',
+    width: '100%',
   },
   loadingContainer: {
     flex: 1,
@@ -516,39 +597,32 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: '#ffffff',
-    borderRadius: 14,
+    borderRadius: 10,
     padding: 14,
-    marginBottom: 12,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: '#e2e8f0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 2,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   ticketId: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '800',
     color: '#0f172a',
+    letterSpacing: 0.3,
   },
   dateText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#94a3b8',
   },
   statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-    gap: 4,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
   statusBadgeText: {
     fontSize: 11,
@@ -557,16 +631,13 @@ const styles = StyleSheet.create({
   locationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f0f9ff',
-    padding: 8,
-    borderRadius: 8,
     gap: 6,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   locationTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
-    color: '#0369a1',
+    color: '#0f172a',
     flex: 1,
   },
   descriptionText: {
@@ -578,13 +649,12 @@ const styles = StyleSheet.create({
   requesterBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
     marginBottom: 8,
   },
   requesterText: {
-    fontSize: 12,
-    color: '#475569',
-    fontWeight: '500',
+    fontSize: 11,
+    color: '#64748b',
   },
   metaRow: {
     flexDirection: 'row',
@@ -595,117 +665,107 @@ const styles = StyleSheet.create({
     backgroundColor: '#f1f5f9',
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 6,
+    borderRadius: 4,
   },
   tagText: {
     fontSize: 11,
     color: '#475569',
-    fontWeight: '600',
   },
   photosRow: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
+    gap: 6,
+    marginBottom: 10,
   },
   photoThumbContainer: {
     position: 'relative',
   },
   thumbImage: {
-    width: 68,
-    height: 68,
-    borderRadius: 8,
+    width: 60,
+    height: 60,
+    borderRadius: 6,
     backgroundColor: '#e2e8f0',
   },
-  photoZoomOverlay: {
-    position: 'absolute',
-    bottom: 4,
-    right: 4,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    borderRadius: 10,
-    padding: 3,
-  },
   adminNotePreview: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: '#f8fafc',
     borderLeftWidth: 3,
-    borderLeftColor: '#0284c7',
+    borderLeftColor: '#0f172a',
     padding: 8,
-    borderRadius: 6,
-    gap: 6,
+    borderRadius: 4,
     marginBottom: 10,
+  },
+  adminNotePreviewTitle: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#0f172a',
+    textTransform: 'uppercase',
+    marginBottom: 2,
   },
   adminNotePreviewText: {
     fontSize: 12,
     color: '#334155',
-    flex: 1,
   },
   actionsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 6,
     borderTopWidth: 1,
     borderTopColor: '#f1f5f9',
-    paddingTop: 10,
+    paddingTop: 8,
   },
   actionBtn: {
-    paddingVertical: 7,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 6,
   },
   btnTake: {
-    backgroundColor: '#0284c7',
+    backgroundColor: '#0f172a',
   },
   btnResolve: {
-    backgroundColor: '#16a34a',
+    backgroundColor: '#15803d',
   },
   btnReject: {
-    backgroundColor: '#fee2e2',
+    backgroundColor: '#f1f5f9',
   },
   btnRejectText: {
     color: '#dc2626',
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '600',
   },
   btnReopen: {
     backgroundColor: '#f1f5f9',
   },
   btnReopenText: {
     color: '#475569',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
   },
   btnComment: {
-    backgroundColor: '#f0f9ff',
+    backgroundColor: '#f8fafc',
     borderWidth: 1,
-    borderColor: '#bae6fd',
+    borderColor: '#cbd5e1',
     marginLeft: 'auto',
   },
   btnCommentText: {
-    color: '#0284c7',
-    fontSize: 12,
+    color: '#0f172a',
+    fontSize: 11,
     fontWeight: '600',
   },
   actionBtnWhiteText: {
     color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '600',
   },
   emptyContainer: {
     alignItems: 'center',
-    paddingVertical: 50,
+    paddingVertical: 40,
   },
   emptyTitle: {
-    fontSize: 15,
-    color: '#64748b',
-    marginTop: 10,
+    fontSize: 13,
+    color: '#94a3b8',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    backgroundColor: 'rgba(15, 23, 42, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -714,8 +774,8 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 420,
     backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 18,
+    borderRadius: 12,
+    padding: 16,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -724,51 +784,52 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   modalTitle: {
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: '700',
     color: '#0f172a',
   },
   modalSubtitle: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#64748b',
     marginBottom: 10,
+    lineHeight: 16,
   },
   modalInput: {
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: '#cbd5e1',
-    borderRadius: 10,
-    padding: 12,
-    height: 100,
-    backgroundColor: '#f8fafc',
-    fontSize: 14,
+    borderRadius: 8,
+    padding: 10,
+    height: 90,
+    backgroundColor: '#ffffff',
+    fontSize: 13,
     color: '#0f172a',
-    marginBottom: 16,
+    marginBottom: 14,
   },
   modalActions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    gap: 10,
+    gap: 8,
   },
   modalCancelBtn: {
-    paddingVertical: 9,
-    paddingHorizontal: 14,
-    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
     backgroundColor: '#f1f5f9',
   },
   modalCancelText: {
     color: '#475569',
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: 12,
   },
   modalSaveBtn: {
-    backgroundColor: '#0284c7',
-    paddingVertical: 9,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    backgroundColor: '#0f172a',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 6,
   },
   modalSaveText: {
     color: '#ffffff',
     fontWeight: '700',
-    fontSize: 14,
+    fontSize: 12,
   },
 });

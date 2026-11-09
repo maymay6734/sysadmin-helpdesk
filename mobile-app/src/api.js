@@ -20,7 +20,7 @@ export const fetchTickets = async (status = null, search = null) => {
   const url = `${base}/api/tickets?${params.toString()}`;
   const response = await fetch(url, { method: 'GET' });
   if (!response.ok) {
-    throw new Error(`Ошибка загрузки заявок (${response.status})`);
+    throw new Error(`Ошибка загрузки данных (${response.status})`);
   }
   return await response.json();
 };
@@ -29,7 +29,7 @@ export const fetchTicketById = async (id) => {
   const base = await getApiUrl();
   const response = await fetch(`${base}/api/tickets/${id}`);
   if (!response.ok) {
-    throw new Error(`Заявка #${id} не найдена`);
+    throw new Error(`Обращение #${id} не найдено`);
   }
   return await response.json();
 };
@@ -52,7 +52,21 @@ export const verifyAdminPin = async (pin) => {
   });
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || 'Неверный PIN-код');
+    throw new Error(errorData.detail || 'Неверный PIN-код доступа');
+  }
+  return await response.json();
+};
+
+export const clearAllTickets = async (pin) => {
+  const base = await getApiUrl();
+  const response = await fetch(`${base}/api/admin/clear-all`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ pin: pin.trim() }),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || 'Ошибка очистки базы данных');
   }
   return await response.json();
 };
@@ -69,7 +83,7 @@ export const updateTicketStatus = async (ticketId, status, adminNotes = null) =>
     body: JSON.stringify(body),
   });
   if (!response.ok) {
-    throw new Error(`Ошибка обновления заявки (${response.status})`);
+    throw new Error(`Ошибка обновления статуса (${response.status})`);
   }
   return await response.json();
 };
@@ -81,14 +95,14 @@ export const createTicket = async ({
   priority,
   contactName,
   contactPhone,
-  photos, // array of { uri, type, fileName }
+  photos,
 }) => {
   const base = await getApiUrl();
   const formData = new FormData();
   formData.append('location', location.trim());
   formData.append('description', description.trim());
   formData.append('category', category || 'Общее');
-  formData.append('priority', priority || 'Обычный');
+  formData.append('priority', priority || 'Средний');
   formData.append('contact_name', contactName ? contactName.trim() : 'Сотрудник');
   formData.append('contact_phone', contactPhone ? contactPhone.trim() : '');
 
@@ -96,7 +110,6 @@ export const createTicket = async ({
     for (let i = 0; i < photos.length; i++) {
       const p = photos[i];
       if (Platform.OS === 'web') {
-        // In web, photo could be a blob/file or object URL
         if (p.file) {
           formData.append('photos', p.file, p.name || `photo_${i}.jpg`);
         } else if (p.uri) {
@@ -109,7 +122,6 @@ export const createTicket = async ({
           }
         }
       } else {
-        // Native (Android/iOS)
         const filename = p.fileName || p.uri.split('/').pop() || `photo_${i}.jpg`;
         const match = /\.(\w+)$/.exec(filename);
         const type = match ? `image/${match[1]}` : (p.mimeType || 'image/jpeg');
@@ -129,7 +141,7 @@ export const createTicket = async ({
 
   if (!response.ok) {
     const err = await response.text();
-    throw new Error(`Ошибка создания заявки: ${err}`);
+    throw new Error(`Ошибка регистрации обращения: ${err}`);
   }
   return await response.json();
 };

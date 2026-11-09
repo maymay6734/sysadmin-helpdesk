@@ -43,7 +43,7 @@ export default function App() {
 
   useEffect(() => {
     checkConnection();
-    const interval = setInterval(checkConnection, 10000);
+    const interval = setInterval(checkConnection, 15000);
     return () => clearInterval(interval);
   }, []);
 
@@ -51,23 +51,23 @@ export default function App() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
 
-      {/* Main App Bar */}
+      {/* Corporate App Bar */}
       <View style={styles.appBar}>
         <View style={styles.appBarLeft}>
           <View style={styles.logoBadge}>
-            <Ionicons name="construct" size={18} color="#ffffff" />
+            <Ionicons name="server-outline" size={16} color="#ffffff" />
           </View>
           <View>
-            <Text style={styles.appTitle}>SysAdmin Desk</Text>
+            <Text style={styles.appTitle}>IT Service Desk</Text>
             <View style={styles.statusIndicatorRow}>
               <View
                 style={[
                   styles.dot,
-                  { backgroundColor: serverOnline ? '#22c55e' : '#ef4444' },
+                  { backgroundColor: serverOnline ? '#16a34a' : '#dc2626' },
                 ]}
               />
               <Text style={styles.serverStatusText}>
-                {serverOnline ? 'Сервер онлайн' : 'Нет связи с сервером'}
+                {serverOnline ? 'Система активна' : 'Автономный режим'}
               </Text>
             </View>
           </View>
@@ -77,9 +77,9 @@ export default function App() {
           <TouchableOpacity
             style={styles.iconButton}
             onPress={() => setSettingsModalVisible(true)}
-            accessibilityLabel="Настройки"
+            accessibilityLabel="Параметры сети"
           >
-            <Ionicons name="settings-outline" size={21} color="#475569" />
+            <Ionicons name="options-outline" size={18} color="#475569" />
           </TouchableOpacity>
 
           {role === 'user' ? (
@@ -87,16 +87,16 @@ export default function App() {
               style={styles.adminSwitchBtn}
               onPress={() => setPinModalVisible(true)}
             >
-              <Ionicons name="shield-outline" size={16} color="#0284c7" />
-              <Text style={styles.adminSwitchText}>Сисадмин</Text>
+              <Ionicons name="lock-closed-outline" size={13} color="#0f172a" />
+              <Text style={styles.adminSwitchText}>Диспетчер</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
-              style={[styles.adminSwitchBtn, { backgroundColor: '#fee2e2' }]}
+              style={[styles.adminSwitchBtn, { backgroundColor: '#f1f5f9' }]}
               onPress={() => setRole('user')}
             >
-              <Ionicons name="person-outline" size={16} color="#ef4444" />
-              <Text style={[styles.adminSwitchText, { color: '#ef4444' }]}>Режим пользователя</Text>
+              <Ionicons name="arrow-back-outline" size={13} color="#475569" />
+              <Text style={[styles.adminSwitchText, { color: '#475569' }]}>В общий режим</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -111,18 +111,13 @@ export default function App() {
               style={[styles.userTab, userTab === 'create' && styles.userTabActive]}
               onPress={() => setUserTab('create')}
             >
-              <Ionicons
-                name="add-circle"
-                size={18}
-                color={userTab === 'create' ? '#0284c7' : '#64748b'}
-              />
               <Text
                 style={[
                   styles.userTabText,
                   userTab === 'create' && styles.userTabTextActive,
                 ]}
               >
-                Новая заявка
+                Регистрация инцидента
               </Text>
             </TouchableOpacity>
 
@@ -130,18 +125,13 @@ export default function App() {
               style={[styles.userTab, userTab === 'list' && styles.userTabActive]}
               onPress={() => setUserTab('list')}
             >
-              <Ionicons
-                name="list"
-                size={18}
-                color={userTab === 'list' ? '#0284c7' : '#64748b'}
-              />
               <Text
                 style={[
                   styles.userTabText,
                   userTab === 'list' && styles.userTabTextActive,
                 ]}
               >
-                Список заявок
+                Журнал обращений
               </Text>
             </TouchableOpacity>
           </View>
@@ -208,7 +198,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 10,
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,
     borderBottomColor: '#e2e8f0',
@@ -219,28 +209,29 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   logoBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: '#0284c7',
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#0f172a',
     justifyContent: 'center',
     alignItems: 'center',
   },
   appTitle: {
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: '800',
     color: '#0f172a',
+    letterSpacing: -0.2,
   },
   statusIndicatorRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
     marginTop: 2,
   },
   dot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   serverStatusText: {
     fontSize: 11,
@@ -254,22 +245,26 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     padding: 6,
-    borderRadius: 8,
-    backgroundColor: '#f1f5f9',
+    borderRadius: 6,
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
   },
   adminSwitchBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#e0f2fe',
+    backgroundColor: '#f1f5f9',
     paddingVertical: 6,
     paddingHorizontal: 10,
-    borderRadius: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
     gap: 4,
   },
   adminSwitchText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
-    color: '#0284c7',
+    color: '#0f172a',
   },
   mainContainer: {
     flex: 1,
@@ -280,29 +275,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: '#e2e8f0',
     gap: 8,
+    maxWidth: 720,
+    alignSelf: 'center',
+    width: '100%',
   },
   userTab: {
     flex: 1,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 9,
-    borderRadius: 10,
+    paddingVertical: 8,
+    borderRadius: 6,
     backgroundColor: '#f8fafc',
-    gap: 6,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
   },
   userTabActive: {
-    backgroundColor: '#e0f2fe',
+    backgroundColor: '#0f172a',
+    borderColor: '#0f172a',
   },
   userTabText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     color: '#64748b',
   },
   userTabTextActive: {
-    color: '#0284c7',
+    color: '#ffffff',
     fontWeight: '700',
   },
 });

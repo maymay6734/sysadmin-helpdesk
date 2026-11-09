@@ -9,34 +9,32 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
-  Platform,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { createTicket } from '../api';
 
 const CATEGORIES = [
-  { id: 'ПК / Ноутбук', icon: 'laptop-outline' },
-  { id: 'Принтер / МФУ', icon: 'print-outline' },
-  { id: 'Сеть / Wi-Fi', icon: 'wifi-outline' },
-  { id: 'ПО / 1С / Почта', icon: 'apps-outline' },
-  { id: 'Доступ / Пароль', icon: 'key-outline' },
-  { id: 'Другое', icon: 'help-circle-outline' },
+  { id: 'Оборудование (ПК, ноутбук)', icon: 'desktop-outline' },
+  { id: 'Периферия (принтер, сканер)', icon: 'print-outline' },
+  { id: 'Сетевая инфраструктура', icon: 'git-network-outline' },
+  { id: 'Программное обеспечение', icon: 'code-working-outline' },
+  { id: 'Учетные записи и права', icon: 'key-outline' },
+  { id: 'Прочее', icon: 'help-circle-outline' },
 ];
 
 const PRIORITIES = [
-  { id: 'Обычный', color: '#64748b', bg: '#f1f5f9' },
-  { id: 'Высокий', color: '#d97706', bg: '#fef3c7' },
-  { id: 'Срочно 🚨', color: '#dc2626', bg: '#fee2e2' },
+  { id: 'Низкий', color: '#64748b', bg: '#f1f5f9' },
+  { id: 'Средний', color: '#0369a1', bg: '#e0f2fe' },
+  { id: 'Высокий', color: '#b45309', bg: '#fef3c7' },
+  { id: 'Критический', color: '#b91c1c', bg: '#fee2e2' },
 ];
-
-const QUICK_LOCATIONS = ['Офис 101', 'Бухгалтерия', 'Отдел продаж', 'Склад', 'Переговорная'];
 
 export default function CreateTicketScreen({ onTicketCreated, onViewMyTickets }) {
   const [location, setLocation] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState(CATEGORIES[0].id);
-  const [priority, setPriority] = useState(PRIORITIES[0].id);
+  const [priority, setPriority] = useState(PRIORITIES[1].id);
   const [contactName, setContactName] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   const [photos, setPhotos] = useState([]);
@@ -47,14 +45,14 @@ export default function CreateTicketScreen({ onTicketCreated, onViewMyTickets })
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Доступ запрещен', 'Требуется разрешение на доступ к галерее для прикрепления фото.');
+        Alert.alert('Доступ ограничен', 'Разрешите доступ к медиатеке для прикрепления скриншотов.');
         return;
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsEditing: false,
-        quality: 0.8,
+        quality: 0.85,
         allowsMultipleSelection: true,
       });
 
@@ -63,7 +61,7 @@ export default function CreateTicketScreen({ onTicketCreated, onViewMyTickets })
       }
     } catch (e) {
       console.error(e);
-      Alert.alert('Ошибка', 'Не удалось открыть галерею: ' + e.message);
+      Alert.alert('Ошибка', 'Не удалось загрузить изображение: ' + e.message);
     }
   };
 
@@ -71,12 +69,12 @@ export default function CreateTicketScreen({ onTicketCreated, onViewMyTickets })
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Доступ запрещен', 'Требуется разрешение на камеру, чтобы сделать фото поломки.');
+        Alert.alert('Доступ ограничен', 'Разрешите доступ к камере устройства.');
         return;
       }
 
       const result = await ImagePicker.launchCameraAsync({
-        quality: 0.8,
+        quality: 0.85,
         allowsEditing: false,
       });
 
@@ -85,7 +83,7 @@ export default function CreateTicketScreen({ onTicketCreated, onViewMyTickets })
       }
     } catch (e) {
       console.error(e);
-      Alert.alert('Ошибка', 'Не удалось запустить камеру: ' + e.message);
+      Alert.alert('Ошибка', 'Не удалось открыть камеру: ' + e.message);
     }
   };
 
@@ -95,11 +93,11 @@ export default function CreateTicketScreen({ onTicketCreated, onViewMyTickets })
 
   const handleSubmit = async () => {
     if (!location.trim()) {
-      Alert.alert('Внимание', 'Пожалуйста, укажите локацию (кабинет, этаж или рабочее место).');
+      Alert.alert('Обязательное поле', 'Укажите точное местоположение (кабинет, корпус или отдел).');
       return;
     }
     if (!description.trim()) {
-      Alert.alert('Внимание', 'Опишите проблему, с которой вы столкнулись.');
+      Alert.alert('Обязательное поле', 'Опишите характер неисправности.');
       return;
     }
 
@@ -116,15 +114,14 @@ export default function CreateTicketScreen({ onTicketCreated, onViewMyTickets })
       });
 
       setSuccessTicketId(newTicket.id);
-      // Reset form
       setLocation('');
       setDescription('');
       setCategory(CATEGORIES[0].id);
-      setPriority(PRIORITIES[0].id);
+      setPriority(PRIORITIES[1].id);
       setPhotos([]);
       if (onTicketCreated) onTicketCreated(newTicket);
     } catch (err) {
-      Alert.alert('Ошибка отправки', err.message || 'Не удалось отправить заявку. Проверьте сервер.');
+      Alert.alert('Ошибка отправки', err.message || 'Сбой при отправке формы. Повторите попытку.');
     } finally {
       setSubmitting(false);
     }
@@ -135,97 +132,72 @@ export default function CreateTicketScreen({ onTicketCreated, onViewMyTickets })
       {successTicketId && (
         <View style={styles.successBanner}>
           <View style={styles.successRow}>
-            <Ionicons name="checkmark-circle" size={28} color="#15803d" />
+            <Ionicons name="checkmark-done-circle" size={26} color="#15803d" />
             <View style={{ flex: 1, marginLeft: 10 }}>
-              <Text style={styles.successTitle}>Заявка #{successTicketId} принята!</Text>
-              <Text style={styles.successText}>Системный администратор уже уведомлен.</Text>
+              <Text style={styles.successTitle}>Обращение INC-{String(successTicketId).padStart(4, '0')} зарегистрировано</Text>
+              <Text style={styles.successText}>Заявка передана на рассмотрение в службу администрирования.</Text>
             </View>
           </View>
-          <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+          <View style={styles.successActions}>
             <TouchableOpacity
-              style={styles.successBtn}
+              style={styles.successBtnSecondary}
               onPress={() => setSuccessTicketId(null)}
             >
-              <Text style={styles.successBtnText}>Создать еще одну</Text>
+              <Text style={styles.successBtnSecondaryText}>Подать еще одно</Text>
             </TouchableOpacity>
             {onViewMyTickets && (
               <TouchableOpacity
-                style={[styles.successBtn, { backgroundColor: '#0284c7' }]}
+                style={styles.successBtnPrimary}
                 onPress={() => {
                   setSuccessTicketId(null);
                   onViewMyTickets();
                 }}
               >
-                <Text style={[styles.successBtnText, { color: '#fff' }]}>К списку заявок</Text>
+                <Text style={styles.successBtnPrimaryText}>Перейти к журналу</Text>
               </TouchableOpacity>
             )}
           </View>
         </View>
       )}
 
-      {/* Hero card */}
-      <View style={styles.heroCard}>
-        <View style={styles.heroBadge}>
-          <Ionicons name="hardware-chip-outline" size={16} color="#0284c7" />
-          <Text style={styles.heroBadgeText}>IT Helpdesk</Text>
-        </View>
-        <Text style={styles.heroTitle}>Заявка системному администратору</Text>
-        <Text style={styles.heroSubtitle}>
-          Опишите проблему, укажите кабинет и прикрепите фото — сисадмин оперативно поможет.
+      {/* Header card */}
+      <View style={styles.headerBlock}>
+        <Text style={styles.headerTitle}>Регистрация инцидента</Text>
+        <Text style={styles.headerSubtitle}>
+          Оформите запрос на техническое обслуживание или устранение неисправности оборудования.
         </Text>
       </View>
 
-      {/* Location Section */}
-      <View style={styles.section}>
-        <View style={styles.labelRow}>
-          <Ionicons name="location" size={18} color="#0284c7" />
-          <Text style={styles.label}>Где возникла проблема? *</Text>
-        </View>
+      {/* Location */}
+      <View style={styles.card}>
+        <Text style={styles.fieldLabel}>Местоположение / Локация <Text style={styles.reqStar}>*</Text></Text>
         <TextInput
-          style={styles.input}
-          placeholder="Например: Главный офис, 3 этаж, каб. 305"
+          style={styles.textInput}
+          placeholder="Корпус, этаж, номер кабинета или название отдела"
           placeholderTextColor="#94a3b8"
           value={location}
           onChangeText={setLocation}
         />
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
-          {QUICK_LOCATIONS.map((loc) => (
-            <TouchableOpacity
-              key={loc}
-              style={[styles.quickChip, location.includes(loc) && styles.quickChipActive]}
-              onPress={() => setLocation((prev) => (prev ? `${prev}, ${loc}` : loc))}
-            >
-              <Text
-                style={[styles.quickChipText, location.includes(loc) && styles.quickChipTextActive]}
-              >
-                + {loc}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
       </View>
 
-      {/* Category Section */}
-      <View style={styles.section}>
-        <View style={styles.labelRow}>
-          <Ionicons name="grid-outline" size={18} color="#0284c7" />
-          <Text style={styles.label}>Категория проблемы</Text>
-        </View>
+      {/* Category */}
+      <View style={styles.card}>
+        <Text style={styles.fieldLabel}>Категория обращения</Text>
         <View style={styles.categoryGrid}>
           {CATEGORIES.map((cat) => {
             const isSelected = category === cat.id;
             return (
               <TouchableOpacity
                 key={cat.id}
-                style={[styles.catCard, isSelected && styles.catCardActive]}
+                style={[styles.categoryTile, isSelected && styles.categoryTileActive]}
                 onPress={() => setCategory(cat.id)}
               >
                 <Ionicons
                   name={cat.icon}
-                  size={20}
-                  color={isSelected ? '#0284c7' : '#64748b'}
+                  size={18}
+                  color={isSelected ? '#0369a1' : '#64748b'}
                 />
-                <Text style={[styles.catCardText, isSelected && styles.catCardTextActive]}>
+                <Text style={[styles.categoryTileText, isSelected && styles.categoryTileTextActive]}>
                   {cat.id}
                 </Text>
               </TouchableOpacity>
@@ -234,15 +206,12 @@ export default function CreateTicketScreen({ onTicketCreated, onViewMyTickets })
         </View>
       </View>
 
-      {/* Description Section */}
-      <View style={styles.section}>
-        <View style={styles.labelRow}>
-          <Ionicons name="chatbox-ellipses-outline" size={18} color="#0284c7" />
-          <Text style={styles.label}>Описание проблемы *</Text>
-        </View>
+      {/* Description */}
+      <View style={styles.card}>
+        <Text style={styles.fieldLabel}>Описание проблемы <Text style={styles.reqStar}>*</Text></Text>
         <TextInput
-          style={[styles.input, styles.textArea]}
-          placeholder="Подробно опишите, что случилось (не включается, мигает ошибка, нет интернета, зависает...)"
+          style={[styles.textInput, styles.textAreaInput]}
+          placeholder="Подробно изложите симптомы сбоя, код ошибки, поведение системы или характер поломки..."
           placeholderTextColor="#94a3b8"
           value={description}
           onChangeText={setDescription}
@@ -252,12 +221,9 @@ export default function CreateTicketScreen({ onTicketCreated, onViewMyTickets })
         />
       </View>
 
-      {/* Priority Section */}
-      <View style={styles.section}>
-        <View style={styles.labelRow}>
-          <Ionicons name="speedometer-outline" size={18} color="#0284c7" />
-          <Text style={styles.label}>Срочность</Text>
-        </View>
+      {/* Priority */}
+      <View style={styles.card}>
+        <Text style={styles.fieldLabel}>Приоритет инцидента</Text>
         <View style={styles.priorityRow}>
           {PRIORITIES.map((p) => {
             const isSelected = priority === p.id;
@@ -266,7 +232,10 @@ export default function CreateTicketScreen({ onTicketCreated, onViewMyTickets })
                 key={p.id}
                 style={[
                   styles.priorityBtn,
-                  { backgroundColor: isSelected ? p.bg : '#f8fafc', borderColor: isSelected ? p.color : '#e2e8f0' },
+                  {
+                    backgroundColor: isSelected ? p.bg : '#ffffff',
+                    borderColor: isSelected ? p.color : '#e2e8f0',
+                  },
                 ]}
                 onPress={() => setPriority(p.id)}
               >
@@ -279,37 +248,34 @@ export default function CreateTicketScreen({ onTicketCreated, onViewMyTickets })
         </View>
       </View>
 
-      {/* Photos Section */}
-      <View style={styles.section}>
-        <View style={styles.labelRow}>
-          <Ionicons name="camera" size={18} color="#0284c7" />
-          <Text style={styles.label}>Фотография поломки / экрана</Text>
-        </View>
-        <Text style={styles.sectionHint}>
-          Фотография помогает сисадмину быстрее определить поломку и взять нужные инструменты.
+      {/* Photos */}
+      <View style={styles.card}>
+        <Text style={styles.fieldLabel}>Фотофиксация / Скриншоты</Text>
+        <Text style={styles.fieldHint}>
+          Приложите снимки экрана с ошибкой или фото оборудования для ускорения диагностики.
         </Text>
 
-        <View style={styles.photoActionsRow}>
-          <TouchableOpacity style={styles.addPhotoBtn} onPress={handleTakePhoto}>
-            <Ionicons name="camera-outline" size={20} color="#0284c7" />
-            <Text style={styles.addPhotoBtnText}>Сделать фото</Text>
+        <View style={styles.photoActions}>
+          <TouchableOpacity style={styles.uploadBtn} onPress={handleTakePhoto}>
+            <Ionicons name="camera-outline" size={18} color="#0f172a" />
+            <Text style={styles.uploadBtnText}>Сделать снимок</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.addPhotoBtn} onPress={handlePickImage}>
-            <Ionicons name="images-outline" size={20} color="#0284c7" />
-            <Text style={styles.addPhotoBtnText}>Из галереи</Text>
+          <TouchableOpacity style={styles.uploadBtn} onPress={handlePickImage}>
+            <Ionicons name="attach-outline" size={18} color="#0f172a" />
+            <Text style={styles.uploadBtnText}>Выбрать файл</Text>
           </TouchableOpacity>
         </View>
 
         {photos.length > 0 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photoPreviewScroll}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photoThumbList}>
             {photos.map((p, idx) => (
-              <View key={idx} style={styles.photoWrapper}>
+              <View key={idx} style={styles.photoItem}>
                 <Image source={{ uri: p.uri }} style={styles.photoThumb} />
                 <TouchableOpacity
-                  style={styles.photoRemoveBtn}
+                  style={styles.photoDeleteBtn}
                   onPress={() => handleRemovePhoto(idx)}
                 >
-                  <Ionicons name="close-circle" size={22} color="#ef4444" />
+                  <Ionicons name="close" size={16} color="#ffffff" />
                 </TouchableOpacity>
               </View>
             ))}
@@ -317,44 +283,42 @@ export default function CreateTicketScreen({ onTicketCreated, onViewMyTickets })
         )}
       </View>
 
-      {/* Contact Section */}
-      <View style={styles.section}>
-        <View style={styles.labelRow}>
-          <Ionicons name="person-outline" size={18} color="#0284c7" />
-          <Text style={styles.label}>Ваши контакты для связи</Text>
-        </View>
-        <View style={styles.contactRow}>
-          <TextInput
-            style={[styles.input, { flex: 1 }]}
-            placeholder="Ваше имя"
-            placeholderTextColor="#94a3b8"
-            value={contactName}
-            onChangeText={setContactName}
-          />
-          <TextInput
-            style={[styles.input, { flex: 1 }]}
-            placeholder="Телефон / TG"
-            placeholderTextColor="#94a3b8"
-            value={contactPhone}
-            onChangeText={setContactPhone}
-            keyboardType="phone-pad"
-          />
+      {/* Requester Contact */}
+      <View style={styles.card}>
+        <Text style={styles.fieldLabel}>Контактные данные заявителя</Text>
+        <View style={styles.contactFields}>
+          <View style={{ flex: 1 }}>
+            <TextInput
+              style={styles.textInput}
+              placeholder="ФИО сотрудника"
+              placeholderTextColor="#94a3b8"
+              value={contactName}
+              onChangeText={setContactName}
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Телефон / Внутренний номер"
+              placeholderTextColor="#94a3b8"
+              value={contactPhone}
+              onChangeText={setContactPhone}
+              keyboardType="phone-pad"
+            />
+          </View>
         </View>
       </View>
 
-      {/* Submit Button */}
+      {/* Submit */}
       <TouchableOpacity
-        style={[styles.submitBtn, submitting && styles.submitBtnDisabled]}
+        style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
         onPress={handleSubmit}
         disabled={submitting}
       >
         {submitting ? (
-          <ActivityIndicator color="#ffffff" />
+          <ActivityIndicator color="#ffffff" size="small" />
         ) : (
-          <View style={styles.submitBtnContent}>
-            <Ionicons name="paper-plane" size={20} color="#ffffff" />
-            <Text style={styles.submitBtnText}>Отправить заявку сисадмину</Text>
-          </View>
+          <Text style={styles.submitButtonText}>Зарегистрировать обращение</Text>
         )}
       </TouchableOpacity>
     </ScrollView>
@@ -369,114 +333,70 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
     paddingBottom: 40,
+    maxWidth: 720,
+    alignSelf: 'center',
+    width: '100%',
   },
-  heroCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 18,
+  headerBlock: {
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  heroBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#e0f2fe',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
-    gap: 4,
-    marginBottom: 8,
   },
-  heroBadgeText: {
-    color: '#0284c7',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  heroTitle: {
-    fontSize: 19,
+  headerTitle: {
+    fontSize: 20,
     fontWeight: '800',
     color: '#0f172a',
-    marginBottom: 4,
+    letterSpacing: -0.3,
   },
-  heroSubtitle: {
+  headerSubtitle: {
     fontSize: 13,
     color: '#64748b',
+    marginTop: 4,
     lineHeight: 18,
   },
-  section: {
+  card: {
     backgroundColor: '#ffffff',
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 16,
-    marginBottom: 14,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: '#e2e8f0',
   },
-  labelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 8,
-  },
-  label: {
-    fontSize: 15,
+  fieldLabel: {
+    fontSize: 13,
     fontWeight: '700',
     color: '#1e293b',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
   },
-  sectionHint: {
+  reqStar: {
+    color: '#dc2626',
+  },
+  fieldHint: {
     fontSize: 12,
     color: '#64748b',
     marginBottom: 10,
+    lineHeight: 16,
   },
-  input: {
-    backgroundColor: '#f8fafc',
+  textInput: {
+    backgroundColor: '#ffffff',
     borderWidth: 1,
     borderColor: '#cbd5e1',
-    borderRadius: 10,
+    borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
     color: '#0f172a',
   },
-  textArea: {
-    height: 90,
-  },
-  chipScroll: {
-    marginTop: 8,
-  },
-  quickChip: {
-    backgroundColor: '#f1f5f9',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-    marginRight: 6,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-  },
-  quickChipActive: {
-    backgroundColor: '#e0f2fe',
-    borderColor: '#0284c7',
-  },
-  quickChipText: {
-    fontSize: 12,
-    color: '#475569',
-  },
-  quickChipTextActive: {
-    color: '#0284c7',
-    fontWeight: '600',
+  textAreaInput: {
+    height: 100,
   },
   categoryGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
-  catCard: {
+  categoryTile: {
     flexBasis: '48%',
     flexGrow: 1,
     flexDirection: 'row',
@@ -484,21 +404,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8fafc',
     borderWidth: 1,
     borderColor: '#e2e8f0',
-    borderRadius: 10,
+    borderRadius: 8,
     padding: 10,
     gap: 8,
   },
-  catCardActive: {
+  categoryTileActive: {
     backgroundColor: '#f0f9ff',
     borderColor: '#0284c7',
   },
-  catCardText: {
-    fontSize: 13,
+  categoryTileText: {
+    fontSize: 12,
     color: '#475569',
     fontWeight: '500',
   },
-  catCardTextActive: {
-    color: '#0284c7',
+  categoryTileTextActive: {
+    color: '#0369a1',
     fontWeight: '700',
   },
   priorityRow: {
@@ -507,90 +427,86 @@ const styles = StyleSheet.create({
   },
   priorityBtn: {
     flex: 1,
-    paddingVertical: 9,
-    borderRadius: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
     borderWidth: 1,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   priorityBtnText: {
-    fontSize: 13,
+    fontSize: 12,
   },
-  photoActionsRow: {
+  photoActions: {
     flexDirection: 'row',
     gap: 10,
   },
-  addPhotoBtn: {
+  uploadBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f0f9ff',
-    borderWidth: 1.5,
-    borderColor: '#bae6fd',
-    borderStyle: 'dashed',
-    borderRadius: 10,
-    paddingVertical: 12,
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 8,
+    paddingVertical: 10,
     gap: 6,
   },
-  addPhotoBtnText: {
+  uploadBtnText: {
     fontSize: 13,
-    color: '#0284c7',
+    color: '#1e293b',
     fontWeight: '600',
   },
-  photoPreviewScroll: {
+  photoThumbList: {
     marginTop: 12,
   },
-  photoWrapper: {
+  photoItem: {
     position: 'relative',
     marginRight: 10,
   },
   photoThumb: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
+    width: 72,
+    height: 72,
+    borderRadius: 6,
+    backgroundColor: '#e2e8f0',
   },
-  photoRemoveBtn: {
+  photoDeleteBtn: {
     position: 'absolute',
     top: -6,
     right: -6,
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
+    backgroundColor: '#0f172a',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  contactRow: {
+  contactFields: {
     flexDirection: 'row',
     gap: 10,
   },
-  submitBtn: {
-    backgroundColor: '#0284c7',
-    borderRadius: 14,
-    paddingVertical: 15,
+  submitButton: {
+    backgroundColor: '#0f172a',
+    borderRadius: 10,
+    paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 6,
-    shadowColor: '#0284c7',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    marginTop: 8,
   },
-  submitBtnDisabled: {
+  submitButtonDisabled: {
     opacity: 0.6,
   },
-  submitBtnContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  submitBtnText: {
+  submitButtonText: {
     color: '#ffffff',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
+    letterSpacing: 0.3,
   },
   successBanner: {
     backgroundColor: '#f0fdf4',
     borderWidth: 1,
     borderColor: '#bbf7d0',
-    borderRadius: 14,
+    borderRadius: 10,
     padding: 14,
     marginBottom: 16,
   },
@@ -599,26 +515,42 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   successTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
     color: '#15803d',
   },
   successText: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#166534',
     marginTop: 2,
   },
-  successBtn: {
+  successActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 10,
+  },
+  successBtnSecondary: {
     backgroundColor: '#ffffff',
-    paddingVertical: 7,
+    paddingVertical: 6,
     paddingHorizontal: 12,
-    borderRadius: 8,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: '#cbd5e1',
   },
-  successBtnText: {
-    fontSize: 13,
+  successBtnSecondaryText: {
+    fontSize: 12,
     fontWeight: '600',
     color: '#334155',
+  },
+  successBtnPrimary: {
+    backgroundColor: '#15803d',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+  },
+  successBtnPrimaryText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#ffffff',
   },
 });

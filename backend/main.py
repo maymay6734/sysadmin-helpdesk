@@ -12,9 +12,9 @@ import database
 # Initialize database
 database.init_db()
 
-app = FastAPI(title="SysAdmin Helpdesk API", version="1.0.0")
+app = FastAPI(title="IT Service Desk API", version="1.0.0")
 
-# Enable CORS for all origins (mobile app, web, expo dev client)
+# Enable CORS for all origins
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -42,13 +42,21 @@ class UpdateTicketRequest(BaseModel):
 
 @app.get("/api/health")
 def health_check():
-    return {"status": "ok", "app": "SysAdmin Helpdesk API"}
+    return {"status": "ok", "app": "IT Service Desk API"}
 
 
 @app.post("/api/admin/verify-pin")
 def verify_admin_pin(req: VerifyPinRequest):
     if req.pin == ADMIN_PIN:
         return {"success": True, "role": "admin"}
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Неверный PIN-код")
+
+
+@app.post("/api/admin/clear-all")
+def clear_all(req: VerifyPinRequest):
+    if req.pin == ADMIN_PIN:
+        database.clear_all_tickets()
+        return {"success": True, "message": "Все обращения успешно удалены"}
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Неверный PIN-код")
 
 
@@ -66,23 +74,22 @@ def list_tickets(status: Optional[str] = None, search: Optional[str] = None):
 def get_ticket(ticket_id: int):
     t = database.get_ticket(ticket_id)
     if not t:
-        raise HTTPException(status_code=404, detail="Заявка не найдена")
+        raise HTTPException(status_code=404, detail="Обращение не найдено")
     return t
 
 
 @app.post("/api/tickets")
 async def create_ticket(
-    location: str = Form(..., description="Локация/кабинет/этаж"),
-    description: str = Form(..., description="Описание проблемы"),
+    location: str = Form(..., description="Локация/рабочее место"),
+    description: str = Form(..., description="Описание неисправности"),
     category: str = Form("Общее"),
-    priority: str = Form("Обычный"),
+    priority: str = Form("Средний"),
     contact_name: str = Form("Сотрудник"),
     contact_phone: str = Form(""),
     photos: List[UploadFile] = File(default=[])
 ):
     saved_filenames = []
     for photo in photos:
-        # Check filename presence
         if photo.filename and photo.filename.strip():
             ext = os.path.splitext(photo.filename)[1].lower()
             if not ext:
@@ -110,7 +117,7 @@ async def create_ticket(
 def update_ticket(ticket_id: int, req: UpdateTicketRequest):
     t = database.get_ticket(ticket_id)
     if not t:
-        raise HTTPException(status_code=404, detail="Заявка не найдена")
+        raise HTTPException(status_code=404, detail="Обращение не найдено")
     
     updated = database.update_ticket(
         ticket_id=ticket_id,
@@ -120,37 +127,6 @@ def update_ticket(ticket_id: int, req: UpdateTicketRequest):
     return updated
 
 
-# Seed demo tickets if DB is empty
-def seed_demo_data():
-    tickets = database.get_tickets()
-    if len(tickets) == 0:
-        database.create_ticket(
-            location="Главный офис, 3 этаж, каб. 305",
-            description="Сетевой принтер HP LaserJet не печатает, мигает красная лампочка ошибки замятия бумаги, хотя лоток пуст.",
-            category="Принтер/Сканер",
-            priority="Высокий",
-            contact_name="Анна (Бухгалтерия)",
-            contact_phone="+7 (999) 111-22-33"
-        )
-        database.create_ticket(
-            location="Склад №2, терминал приемки",
-            description="Пропал Wi-Fi, сканер штрих-кодов не синхронизируется с базой данных.",
-            category="Сеть / Wi-Fi",
-            priority="Критический",
-            contact_name="Сергей (Кладовщик)",
-            contact_phone="+7 (999) 444-55-66"
-        )
-        database.create_ticket(
-            location="Корпус Б, 2 этаж, каб. 214",
-            description="Нужно установить новую версию 1С и настроить электронную цифровую подпись.",
-            category="ПО и Доступы",
-            priority="Обычный",
-            contact_name="Дмитрий (Юрист)",
-            contact_phone="+7 (999) 777-88-99"
-        )
-
-seed_demo_data()
-
 # Mount frontend static web app (if built)
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 if os.path.exists(STATIC_DIR):
@@ -158,5 +134,4 @@ if os.path.exists(STATIC_DIR):
 
 if __name__ == "__main__":
     import uvicorn
-    # Bind to 0.0.0.0 so phones on the same local Wi-Fi network can connect directly
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
