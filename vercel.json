@@ -3,12 +3,12 @@
   "outputDirectory": "public",
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "https://sysadmin-helpdesk.onrender.com/api/$1"
+      "source": "/api/:match*",
+      "destination": "https://sysadmin-helpdesk.onrender.com/api/:match*"
     },
     {
-      "source": "/uploads/(.*)",
-      "destination": "https://sysadmin-helpdesk.onrender.com/uploads/$1"
+      "source": "/uploads/:match*",
+      "destination": "https://sysadmin-helpdesk.onrender.com/uploads/:match*"
     }
   ]
 }

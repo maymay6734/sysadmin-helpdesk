@@ -1,0 +1,5 @@
+backend/
+mobile-app/
+Dockerfile
+amvera.yml
+*.py
