@@ -1,0 +1,17 @@
+# Конфигурация Caddy для автоматического получения и продления бесплатного SSL-сертификата (HTTPS)
+# Переменная DOMAIN берется из файла .env (например: DOMAIN=helpdesk.example.ru)
+
+{$DOMAIN:localhost} {
+    # Проксирование всех запросов в контейнер приложения
+    reverse_proxy app:8000
+
+    # Автоматическое сжатие для быстрого открытия на смартфонах
+    encode zstd gzip
+
+    # Защитные заголовки
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options SAMEORIGIN
+        Referrer-Policy strict-origin-when-cross-origin
+    }
+}

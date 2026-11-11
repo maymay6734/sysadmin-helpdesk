@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  # Основное приложение (FastAPI + Web UI + SQLite)
+  app:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: helpdesk_app
+    restart: always
+    environment:
+      - ADMIN_PIN=${ADMIN_PIN:-1234}
+      - PORT=8000
+    volumes:
+      - ./data/uploads:/app/uploads
+      - ./data/helpdesk.db:/app/helpdesk.db
+    networks:
+      - helpdesk_network
+
+  # Caddy веб-сервер с автоматическим бесплатным HTTPS (Let's Encrypt)
+  caddy:
+    image: caddy:2-alpine
+    container_name: helpdesk_caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - DOMAIN=${DOMAIN:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+    networks:
+      - helpdesk_network
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+networks:
+  helpdesk_network:
+    driver: bridge

@@ -10,5 +10,10 @@ __pycache__/
 *.py[cod]
 *.db-journal
 
-# Ignore local uploaded photos if needed (optional)
-# backend/uploads/*
+# Environment & Data
+.env
+data/
+caddy_data/
+caddy_config/
+backend/uploads/*
+!backend/uploads/.gitkeep

@@ -16,6 +16,8 @@ def get_db_connection():
 def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
+    
+    # Tickets table
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS tickets (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -31,6 +33,8 @@ def init_db():
         updated_at TEXT NOT NULL
     );
     """)
+    
+    # Images table
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS ticket_images (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -41,8 +45,63 @@ def init_db():
         FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE
     );
     """)
+    
+    # Settings table
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+    );
+    """)
+    
+    # Seed default settings if not exists
+    defaults = {
+        "admin_pin": "1234",
+        "telegram_bot_token": "",
+        "telegram_chat_id": "",
+        "telegram_enabled": "0",
+        "company_name": "IT Service Desk"
+    }
+    for k, v in defaults.items():
+        cursor.execute("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)", (k, v))
+        
     conn.commit()
     conn.close()
+
+def get_setting(key: str, default: Optional[str] = None) -> str:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT value FROM settings WHERE key = ?", (key,))
+    row = cursor.fetchone()
+    conn.close()
+    if row:
+        return row[0]
+    return default or ""
+
+def set_setting(key: str, value: str):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO settings (key, value) VALUES (?, ?)
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value
+    """, (key, value))
+    conn.commit()
+    conn.close()
+
+def get_all_settings() -> Dict[str, str]:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT key, value FROM settings")
+    rows = cursor.fetchall()
+    conn.close()
+    result = {row["key"]: row["value"] for row in rows}
+    # Hide sensitive telegram token partially for safety in UI
+    raw_token = result.get("telegram_bot_token", "")
+    if len(raw_token) > 10:
+        result["telegram_bot_token_masked"] = raw_token[:6] + "..." + raw_token[-4:]
+    else:
+        result["telegram_bot_token_masked"] = raw_token
+    return result
 
 def create_ticket(
     location: str,
@@ -86,9 +145,9 @@ def get_tickets(status: Optional[str] = None, search: Optional[str] = None) -> L
         params.append(status)
         
     if search:
-        query += " AND (location LIKE ? OR description LIKE ? OR contact_name LIKE ?)"
+        query += " AND (location LIKE ? OR description LIKE ? OR contact_name LIKE ? OR contact_phone LIKE ?)"
         s = f"%{search}%"
-        params.extend([s, s, s])
+        params.extend([s, s, s, s])
         
     query += " ORDER BY id DESC"
     cursor.execute(query, params)
@@ -97,7 +156,7 @@ def get_tickets(status: Optional[str] = None, search: Optional[str] = None) -> L
     tickets = []
     for row in rows:
         t = dict(row)
-        cursor.execute("SELECT filename, file_path FROM ticket_images WHERE ticket_id = ?", (t["id"],))
+        cursor.execute("SELECT id, filename, file_path FROM ticket_images WHERE ticket_id = ?", (t["id"],))
         img_rows = cursor.fetchall()
         t["images"] = [dict(img) for img in img_rows]
         tickets.append(t)
@@ -115,7 +174,7 @@ def get_ticket(ticket_id: int) -> Optional[Dict[str, Any]]:
         return None
     
     t = dict(row)
-    cursor.execute("SELECT filename, file_path FROM ticket_images WHERE ticket_id = ?", (t["id"],))
+    cursor.execute("SELECT id, filename, file_path FROM ticket_images WHERE ticket_id = ?", (t["id"],))
     img_rows = cursor.fetchall()
     t["images"] = [dict(img) for img in img_rows]
     conn.close()
@@ -149,6 +208,29 @@ def update_ticket(ticket_id: int, status: Optional[str] = None, admin_notes: Opt
     conn.close()
     return get_ticket(ticket_id)
 
+def delete_ticket(ticket_id: int) -> bool:
+    """Deletes ticket and its uploaded images from disk."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Find files to delete
+    cursor.execute("SELECT filename FROM ticket_images WHERE ticket_id = ?", (ticket_id,))
+    rows = cursor.fetchall()
+    for row in rows:
+        fname = row["filename"]
+        fpath = os.path.join(UPLOAD_DIR, fname)
+        if os.path.isfile(fpath):
+            try:
+                os.remove(fpath)
+            except Exception:
+                pass
+                
+    cursor.execute("DELETE FROM ticket_images WHERE ticket_id = ?", (ticket_id,))
+    cursor.execute("DELETE FROM tickets WHERE id = ?", (ticket_id,))
+    conn.commit()
+    conn.close()
+    return True
+
 def clear_all_tickets():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -171,7 +253,7 @@ def clear_all_tickets():
                 except Exception:
                     pass
 
-def get_statistics() -> Dict[str, int]:
+def get_statistics() -> Dict[str, Any]:
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT COUNT(*) FROM tickets")
@@ -186,10 +268,14 @@ def get_statistics() -> Dict[str, int]:
     cursor.execute("SELECT COUNT(*) FROM tickets WHERE status = 'resolved'")
     resolved = cursor.fetchone()[0]
     
+    cursor.execute("SELECT COUNT(*) FROM tickets WHERE status = 'rejected'")
+    rejected = cursor.fetchone()[0]
+    
     conn.close()
     return {
         "total": total,
         "new": new_count,
         "in_progress": in_progress,
-        "resolved": resolved
+        "resolved": resolved,
+        "rejected": rejected
     }
